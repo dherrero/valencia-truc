@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./apps/frontend"
+    },
+    {
+      "path": "./apps/backend"
+    },
+    {
+      "path": "./libs/shared-logic"
+    },
+    {
+      "path": "./libs/shared/interfaces"
+    },
+    {
+      "path": "./libs/shared/game-engine"
+    }
+  ]
+}
