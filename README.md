@@ -1,101 +1,152 @@
-# ValenciaTruc
+# 🃏 Truc Valencià — Videojuego Online
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+Implementación web del juego de cartas **Truc Valencià** en tiempo real, construido como un monorepo Nx con TypeScript estricto en todo el stack.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+---
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/tutorials/react-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+## 🗺️ Arquitectura del Monorepo
 
-## Run tasks
+```
+valencia-truc/
+├── apps/
+│   ├── frontend/          # Cliente React + Tailwind CSS + Framer Motion
+│   └── backend/           # Servidor Socket.io + XState (orquestador)
+└── libs/
+    └── shared/
+        ├── game-engine/   # Lógica pura del Truc Valencià (single source of truth)
+        └── interfaces/    # Contratos TypeScript compartidos (eventos Socket.io)
+```
 
-To run the dev server for your app, use:
+### Stack Tecnológico
 
-```sh
+| Capa | Tecnología |
+|---|---|
+| Monorepo | Nx Workspace |
+| Frontend | React 19, Tailwind CSS, Framer Motion |
+| Backend | Node.js, Express, Socket.io |
+| Estado del Juego | XState v5 (máquinas de estados paralelas) |
+| Lenguaje | TypeScript estricto (sin `any`) |
+| Tests | Jest (unitarios), Cypress (E2E) |
+
+---
+
+## 🎴 Reglas del Truc Valencià (Implementadas)
+
+- **Mazo de 22 cartas**: Se excluyen los 2s, 8s, 9s y todas las figuras (10, 11, 12).
+- **Jerarquía no lineal** (de mayor a menor poder):
+  1. 🗡️ As de Espadas
+  2. 🪄 As de Bastos
+  3. ⚡ 7 de Espadas
+  4. 🏅 7 de Oros
+  5. Treses, Cuatros, Cincos, Seis, 7 de Copas/Bastos, As de Oros/Copas
+- **Cálculo de Envido**: Solo se puede cantar en la primera mano. Puntuación máxima: 33 pts.
+- **Flujo de Truc**: `Truc → Retruc → Vale Quatre` con interrupciones de estado.
+
+---
+
+## 🚀 Comandos Disponibles
+
+```bash
+# Levantar frontend + backend en modo watch
+npm run dev
+
+# Build de producción de todos los proyectos
+npm run build
+
+# Lanzar todos los tests unitarios
+npm run test
+
+# Pasar el linter por todo el monorepo
+npm run lint
+
+# Ejecutar tests E2E (Cypress)
+npm run e2e
+```
+
+### Comandos Nx individuales
+
+```bash
+# Servir solo el frontend (React, puerto 4200)
 npx nx serve frontend
-```
 
-To create a production bundle:
+# Servir solo el backend (Socket.io, puerto 3333)
+npx nx serve backend
 
-```sh
+# Build de producción de un proyecto concreto
 npx nx build frontend
+npx nx build backend
+
+# Tests unitarios de la lógica compartida
+npx nx test shared-game-engine
+
+# Explorar el grafo de dependencias del monorepo
+npx nx graph
 ```
 
-To see all available targets to run for a project, run:
+---
 
-```sh
-npx nx show project frontend
+## 🤖 Bot de Pruebas (IA)
+
+El backend incluye un **TrucBot** con heurísticas simples para partidas de prueba:
+
+- Canta **Envido** si supera los 27 puntos de envido.
+- Canta **Truc** si tiene una de las 4 cartas maestras (o con un 20% de farol).
+- Simula **tiempo de pensamiento** (1–3 segundos) para una experiencia realista.
+
+**Endpoint de debug:**
+```
+GET http://localhost:3333/debug/start-bot-game
+```
+Esto inicializa una sala `room-1` con el bot en el Equipo 2. Abre `localhost:4200` y comienza a jugar directamente.
+
+---
+
+## 🛡️ Seguridad Anti-Trampas
+
+El backend implementa `sanitizeGameState()`: antes de emitir el estado por socket, **oculta las cartas del rival**, enviando únicamente un contador de cartas en mano. Ningún usuario puede ver las cartas del oponente inspeccionando el tráfico de red.
+
+---
+
+## 🧪 Tests Unitarios
+
+La lógica de dominio en `libs/shared/game-engine` está cubierta por tests Jest que validan:
+
+- La jerarquía de poder de todas las cartas especiales.
+- El cálculo correcto de Envido (mismos palos, palos distintos, máximo 33).
+- La validación del mazo de 22 cartas (sin 2s, 8s, 9s ni figuras).
+
+```bash
+npx nx test shared-game-engine
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+---
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## 📡 Contratos de Eventos (Socket.io)
 
-## Add new projects
+Definidos en `libs/shared/interfaces/socket-events.ts`:
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
+| Evento Cliente → Servidor | Descripción |
+|---|---|
+| `room:join` | El jugador se une a una sala |
+| `game:action` | Envía una acción (`TRUC`, `ENVIDO`, `JUGAR_CARTA`, etc.) |
 
-Use the plugin's generator to create new projects.
+| Evento Servidor → Cliente | Descripción |
+|---|---|
+| `game:state-update` | Estado sanitizado del juego para ese jugador |
+| `game:error` | Mensaje de error (sala no encontrada, etc.) |
 
-To generate a new application, use:
+---
 
-```sh
-npx nx g @nx/react:app demo
-```
+## 📁 Archivos Clave
 
-To generate a new library, use:
-
-```sh
-npx nx g @nx/react:lib mylib
-```
-
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
-
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Set up CI!
-
-### Step 1
-
-To connect to Nx Cloud, run the following command:
-
-```sh
-npx nx connect
-```
-
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
-
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-### Step 2
-
-Use the following command to configure a CI workflow for your workspace:
-
-```sh
-npx nx g ci-workflow
-```
-
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Install Nx Console
-
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
-
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Useful links
-
-Learn more:
-
-- [Learn more about this workspace setup](https://nx.dev/getting-started/tutorials/react-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+| Archivo | Descripción |
+|---|---|
+| `libs/shared/game-engine/src/lib/shared-game-engine.ts` | Lógica pura: mazo, jerarquía, envido |
+| `libs/shared/game-engine/src/lib/truc-machine.ts` | Máquina de estados XState |
+| `libs/shared/interfaces/src/lib/socket-events.ts` | Contratos de eventos y tipos |
+| `apps/backend/src/main.ts` | Gateway Socket.io + gestión de salas |
+| `apps/backend/src/app/sanitize-state.ts` | Función anti-trampas |
+| `apps/backend/src/app/bot.ts` | IA Bot de pruebas |
+| `apps/frontend/src/app/hooks/useTrucSocket.ts` | Hook React para la conexión |
+| `apps/frontend/src/app/components/Board.tsx` | Tablero principal de juego |
+| `apps/frontend/src/app/components/Card.tsx` | Carta con CSS Sprites + Framer Motion |
