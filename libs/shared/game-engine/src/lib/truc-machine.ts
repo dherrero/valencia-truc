@@ -1,5 +1,6 @@
 import { createMachine, assign } from 'xstate';
 import { Card } from '@valencia-truc/shared-interfaces';
+import { VALENCIA_DECK } from './shared-game-engine.js';
 
 export interface TrucContext {
   puntuacionCama: { equipo1: number; equipo2: number };
@@ -10,7 +11,7 @@ export interface TrucContext {
 }
 
 export type TrucEvent =
-  | { type: 'REPARTIR' }
+  | { type: 'REPARTIR'; jugadores: string[] }
   | { type: 'JUGAR_CARTA'; jugadorId: string; carta: Card }
   | { type: 'CANTAR_TRUC'; jugadorId: string }
   | { type: 'RETRUC'; jugadorId: string }
@@ -149,9 +150,26 @@ export const trucMachine = createMachine(
         console.log('Envido rechazado (se sumará 1 punto a Cama)');
       },
       // Handling TS correctly
-      repartirCartas: assign({
-        manoActual: 1
-      } as Partial<TrucContext>)
+      repartirCartas: assign((input: unknown) => {
+        // XState v5: input is { context, event }
+        const ev = (input as { event?: TrucEvent }).event;
+        const jugadores = ev?.type === 'REPARTIR' && ev.jugadores.length > 0
+          ? ev.jugadores
+          : ['equipo1', 'equipo2'];
+
+        const shuffled = [...VALENCIA_DECK].sort(() => Math.random() - 0.5);
+        const cartasJugadores: Record<string, Card[]> = {};
+        jugadores.forEach((id, i) => {
+          cartasJugadores[id] = shuffled.slice(i * 3, (i + 1) * 3);
+        });
+
+        return {
+          manoActual: 1,
+          bazasGanadas: { equipo1: 0, equipo2: 0 },
+          estadoEnvido: 0,
+          cartasJugadores,
+        } as Partial<TrucContext>;
+      })
     }
   }
 );

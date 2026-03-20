@@ -22,11 +22,27 @@ valencia-truc/
 | Capa | Tecnología |
 |---|---|
 | Monorepo | Nx Workspace |
-| Frontend | React 19, Tailwind CSS, Framer Motion |
+| Frontend | React 19, Tailwind CSS 3, Framer Motion |
 | Backend | Node.js, Express, Socket.io |
 | Estado del Juego | XState v5 (máquinas de estados paralelas) |
 | Lenguaje | TypeScript estricto (sin `any`) |
 | Tests | Jest (unitarios), Cypress (E2E) |
+
+---
+
+## 🖥️ Rutas del Frontend
+
+| Ruta | Descripción |
+|---|---|
+| `/` | **Lobby** — lista en tiempo real de salas activas |
+| `/partida/:uid` | **Partida** — tablero de juego identificado por UUID |
+
+### Flujo de Usuario
+
+1. Abre `localhost:4200` → ves el lobby con las salas abiertas (actualizadas vía Socket.io).
+2. **"+ Crear Sala"** → modal con nombre de sala y selector de bots (0–3).
+3. Al crear/unirte → navegas automáticamente a `/partida/<uuid>`.
+4. El `UID` y `playerId` se guardan en **LocalStorage** para recuperar la partida en un refresco de página.
 
 ---
 
@@ -48,7 +64,7 @@ valencia-truc/
 
 ```bash
 # Levantar frontend + backend en modo watch
-npm run dev
+npm run dev      # o npm start
 
 # Build de producción de todos los proyectos
 npm run build
@@ -72,10 +88,6 @@ npx nx serve frontend
 # Servir solo el backend (Socket.io, puerto 3333)
 npx nx serve backend
 
-# Build de producción de un proyecto concreto
-npx nx build frontend
-npx nx build backend
-
 # Tests unitarios de la lógica compartida
 npx nx test shared-game-engine
 
@@ -85,55 +97,71 @@ npx nx graph
 
 ---
 
-## 🤖 Bot de Pruebas (IA)
+## 🏠 Sistema de Salas (Multi-Room)
 
-El backend incluye un **TrucBot** con heurísticas simples para partidas de prueba:
+- El backend gestiona **N salas** simultáneas, cada una identificada por un **UUID** único.
+- Nombre por defecto: `Sala X` donde `X = salas activas + 1`.
+- Máximo **4 jugadores** por sala (humanos + bots).
+- Al crear una sala se pueden añadir **0–3 bots** como contrincantes.
+- Cuando todos los humanos se desconectan, la sala se **destruye automáticamente** y la memoria se libera.
+- La lista de salas se actualiza en **tiempo real** para todos los clientes en el lobby.
 
-- Canta **Envido** si supera los 27 puntos de envido.
-- Canta **Truc** si tiene una de las 4 cartas maestras (o con un 20% de farol).
-- Simula **tiempo de pensamiento** (1–3 segundos) para una experiencia realista.
-
-**Endpoint de debug:**
+### Endpoint REST (debug)
 ```
-GET http://localhost:3333/debug/start-bot-game
-```
-Esto inicializa una sala `room-1` con el bot en el Equipo 2. Abre `localhost:4200` y comienza a jugar directamente.
-
----
-
-## 🛡️ Seguridad Anti-Trampas
-
-El backend implementa `sanitizeGameState()`: antes de emitir el estado por socket, **oculta las cartas del rival**, enviando únicamente un contador de cartas en mano. Ningún usuario puede ver las cartas del oponente inspeccionando el tráfico de red.
-
----
-
-## 🧪 Tests Unitarios
-
-La lógica de dominio en `libs/shared/game-engine` está cubierta por tests Jest que validan:
-
-- La jerarquía de poder de todas las cartas especiales.
-- El cálculo correcto de Envido (mismos palos, palos distintos, máximo 33).
-- La validación del mazo de 22 cartas (sin 2s, 8s, 9s ni figuras).
-
-```bash
-npx nx test shared-game-engine
+GET http://localhost:3333/api/rooms
 ```
 
 ---
 
 ## 📡 Contratos de Eventos (Socket.io)
 
-Definidos en `libs/shared/interfaces/socket-events.ts`:
+Definidos en `libs/shared/interfaces/src/lib/socket-events.ts`:
 
-| Evento Cliente → Servidor | Descripción |
-|---|---|
-| `room:join` | El jugador se une a una sala |
-| `game:action` | Envía una acción (`TRUC`, `ENVIDO`, `JUGAR_CARTA`, etc.) |
+| Evento Cliente → Servidor | Payload | Descripción |
+|---|---|---|
+| `room:create` | `{ name?, bots? }` | Crear sala nueva |
+| `room:join` | `{ uid, playerId }` | Unirse a sala existente |
+| `game:action` | `{ type, payload? }` | Enviar acción de juego |
 
-| Evento Servidor → Cliente | Descripción |
-|---|---|
-| `game:state-update` | Estado sanitizado del juego para ese jugador |
-| `game:error` | Mensaje de error (sala no encontrada, etc.) |
+| Evento Servidor → Cliente | Payload | Descripción |
+|---|---|---|
+| `rooms:list` | `RoomSummary[]` | Lista actualizada de salas (broadcast) |
+| `room:created` | `RoomSummary` | Confirmación de creación |
+| `room:joined` | `RoomSummary` | Confirmación de unión |
+| `room:error` | `string` | Sala llena, no existe, etc. |
+| `room:destroyed` | `string` | Sala eliminada al finalizar la partida |
+| `game:state-update` | `GameStateUpdate` | Estado sanitizado para ese jugador |
+
+---
+
+## 🤖 Bot de Pruebas (IA)
+
+El backend incluye un **TrucBot** con heurísticas simples:
+
+- Canta **Envido** si supera los 27 puntos de envido.
+- Canta **Truc** si tiene una de las 4 cartas maestras (o con un 20% de farol).
+- Simula **tiempo de pensamiento** (1–3 segundos) para una experiencia realista.
+
+Se instancian directamente al crear la sala, sin necesidad de websockets.
+
+---
+
+## 🛡️ Seguridad Anti-Trampas
+
+`sanitizeGameState()` en el backend intercepta el estado XState antes de emitirlo por socket. Cada jugador recibe solo sus propias cartas; las del rival se sustituyen por un simple contador.
+
+---
+
+## 🧪 Tests Unitarios
+
+```bash
+npx nx test shared-game-engine
+```
+
+Validan:
+- Jerarquía de poder de todas las cartas especiales.
+- Cálculo correcto de Envido (mismos palos / palos distintos / máximo 33).
+- Validación del mazo de 22 cartas.
 
 ---
 
@@ -142,11 +170,13 @@ Definidos en `libs/shared/interfaces/socket-events.ts`:
 | Archivo | Descripción |
 |---|---|
 | `libs/shared/game-engine/src/lib/shared-game-engine.ts` | Lógica pura: mazo, jerarquía, envido |
-| `libs/shared/game-engine/src/lib/truc-machine.ts` | Máquina de estados XState |
-| `libs/shared/interfaces/src/lib/socket-events.ts` | Contratos de eventos y tipos |
-| `apps/backend/src/main.ts` | Gateway Socket.io + gestión de salas |
+| `libs/shared/game-engine/src/lib/truc-machine.ts` | Máquina de estados XState + reparto de cartas |
+| `libs/shared/interfaces/src/lib/socket-events.ts` | Todos los contratos de eventos y tipos |
+| `apps/backend/src/main.ts` | Gateway Socket.io + gestión de salas multi-room |
 | `apps/backend/src/app/sanitize-state.ts` | Función anti-trampas |
 | `apps/backend/src/app/bot.ts` | IA Bot de pruebas |
-| `apps/frontend/src/app/hooks/useTrucSocket.ts` | Hook React para la conexión |
+| `apps/frontend/src/app/pages/Home.tsx` | Lobby en tiempo real |
+| `apps/frontend/src/app/pages/GamePage.tsx` | Cargador de partida desde URL + LocalStorage |
+| `apps/frontend/src/app/hooks/useTrucSocket.ts` | Hook React para la conexión a la sala |
 | `apps/frontend/src/app/components/Board.tsx` | Tablero principal de juego |
 | `apps/frontend/src/app/components/Card.tsx` | Carta con CSS Sprites + Framer Motion |

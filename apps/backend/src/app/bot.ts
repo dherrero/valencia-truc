@@ -1,5 +1,4 @@
 import { AnyActorRef } from 'xstate';
-import { TrucAction } from '@valencia-truc/shared-interfaces';
 import { TrucContext, calculateEnvido, getCardPower } from '@valencia-truc/shared-game-engine';
 
 export class TrucBot {
@@ -10,77 +9,75 @@ export class TrucBot {
     this.actor = actor;
     this.botId = botId;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.actor.subscribe((state: any) => {
-      this.handleState(state);
+    this.actor.subscribe((state: unknown) => {
+      // Simulate human thinking time (1-2s)
+      setTimeout(() => {
+        try {
+          this.decideAction(state);
+        } catch (err) {
+          // Never let a bot error crash the server
+          console.warn(`[TrucBot ${this.botId}] Error in decideAction:`, err);
+        }
+      }, Math.floor(Math.random() * 1500) + 800);
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private handleState(state: any) {
-    // Quick guard to only act if it's our turn based on simple heuristics in this prototype
-    // Some states require responses from the non-active player (like responding to Truc)
-    // For simplicity, the bot will attempt to decide its next action based on context flags
+  private decideAction(state: unknown) {
+    // XState v5 snapshot: { context, value, can() }
+    const snap = state as { context: TrucContext; can: (event: { type: string }) => boolean };
+    const context = snap.context;
+    if (!context) return;
 
-    // Simulate human thinking randomly between 1 to 3 seconds
-    setTimeout(() => {
-      this.decideAction(state);
-    }, Math.floor(Math.random() * 2000) + 1000);
-  }
+    const misCartas = context.cartasJugadores?.[this.botId] ?? [];
+    if (misCartas.length === 0) return; // No cards yet, nothing to do
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private decideAction(state: any) {
-    const context = state.context as TrucContext;
-    const nextEvents = state.nextEvents as string[]; // from xstate snapshot
-    const misCartas = context.cartasJugadores[this.botId] || [];
-    
-    if (misCartas.length === 0) return; // Nada que hacer sin cartas
+    // Helper: check if an event is currently allowed by the machine
+    const can = (type: string) => {
+      try { return snap.can({ type }); } catch { return false; }
+    };
 
     const envidoPoints = calculateEnvido(misCartas);
-    
-    // 1. Responder a Envido
-    if (nextEvents.includes(TrucAction.QUIERO) && state.value.envido === 'cantado') {
-      if (envidoPoints > 25) {
-        this.actor.send({ type: TrucAction.QUIERO, jugadorId: this.botId });
-      } else {
-        this.actor.send({ type: TrucAction.NO_QUIERO, jugadorId: this.botId });
+
+    // 1. Respond to Envido call
+    if (can('QUIERO') && can('NO_QUIERO')) {
+      // We're being asked to respond to something (Envido or Truc)
+      // Check if envido is pending
+      const snap2 = state as { value?: { envido?: string } };
+      if (snap2.value?.envido === 'cantado') {
+        if (envidoPoints > 25) {
+          this.actor.send({ type: 'QUIERO', jugadorId: this.botId });
+        } else {
+          this.actor.send({ type: 'NO_QUIERO', jugadorId: this.botId });
+        }
+        return;
       }
+
+      // Otherwise it's a Truc response — always accept for now
+      this.actor.send({ type: 'QUIERO', jugadorId: this.botId });
       return;
     }
 
-    // 2. Cantar Envido (solo si no se ha cantado y tenemos buena puntuación)
-    if (nextEvents.includes(TrucAction.ENVIDO) && envidoPoints > 27) {
-      // 20% farol
-      if (Math.random() > 0.8 || envidoPoints > 27) {
-        this.actor.send({ type: TrucAction.ENVIDO, jugadorId: this.botId });
-        return;
-      }
+    // 2. Sing Envido if we have strong points (only on mano 1)
+    if (can('CANTAR_ENVIDO') && envidoPoints > 27) {
+      this.actor.send({ type: 'CANTAR_ENVIDO', jugadorId: this.botId });
+      return;
     }
 
-    // 3. Responder a Truc
-    if (nextEvents.includes(TrucAction.QUIERO) && state.value.truc === 'truc_cantado') {
-        this.actor.send({ type: TrucAction.QUIERO, jugadorId: this.botId }); // Prototype bot siempre quiere el truc de momento
-        return;
-    }
-
-    // 4. Cantar Truc (Farol 20% o con cartas fuertes)
-    if (nextEvents.includes(TrucAction.TRUC)) {
-      const hasMaster = misCartas.some(c => {
-        const val = getCardPower(c);
-        // As Espadas (22), As Bastos (21), 7 Espadas (20), 7 Oros (19)
-        return val >= 19;
-      });
-
+    // 3. Sing Truc with master cards or a 20% bluff
+    if (can('CANTAR_TRUC')) {
+      const hasMaster = misCartas.some(c => getCardPower(c) >= 7); // top 4 cards have power ≥ 7
       if (hasMaster || Math.random() > 0.8) {
-        this.actor.send({ type: TrucAction.TRUC, jugadorId: this.botId });
+        this.actor.send({ type: 'CANTAR_TRUC', jugadorId: this.botId });
         return;
       }
     }
 
-    // 5. Jugar Carta (la más baja posible, para simular)
-    if (nextEvents.includes(TrucAction.JUGAR_CARTA) && !nextEvents.includes(TrucAction.QUIERO)) {
+    // 4. Play a card (the weakest one to conserve stronger ones)
+    if (can('JUGAR_CARTA')) {
       const lowestCard = [...misCartas].sort((a, b) => getCardPower(a) - getCardPower(b))[0];
-      this.actor.send({ type: TrucAction.JUGAR_CARTA, payload: lowestCard, jugadorId: this.botId });
+      if (lowestCard) {
+        this.actor.send({ type: 'JUGAR_CARTA', jugadorId: this.botId, carta: lowestCard });
+      }
     }
   }
 }

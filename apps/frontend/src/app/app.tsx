@@ -1,9 +1,15 @@
-import { Board } from './components/Board';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import Home from './pages/Home';
+import GamePage from './pages/GamePage';
 
 export function App() {
   return (
     <div className="w-full h-full min-h-screen bg-slate-900">
-      <Board />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/partida/:uid" element={<GamePage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </div>
   );
 }

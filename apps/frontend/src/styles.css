@@ -2,4 +2,65 @@
 @tailwind components;
 @tailwind utilities;
 
-/* You can add global styles to this file, and also import other style files */
+/* ================================================================
+   CSS SPRITES — Baraja Española (Truc Valencià)
+   Original card: 208px × 318px  |  Display: 104px × 159px (50%)
+   Grid: 12 cols × 5 rows
+   Row 0: Oros | Row 1: Copas | Row 2: Espadas | Row 3: Bastos
+   Row 4: Col 0 = Blank | Col 1 = Reverso
+   background-size at 50% = 1248px × 795px
+   Positions are col×104 and row×159 (negated)
+   ================================================================ */
+
+.card-sprite,
+.card-reverso {
+  display: inline-block;
+  width: 104px;
+  height: 159px;
+  background-image: url('./assets/Baraja_espanola_completa.png');
+  background-size: 1248px 795px;
+  background-repeat: no-repeat;
+  border-radius: 6px;
+}
+
+/* ---- REVERSO (fila 4, col 1) ---- */
+.card-reverso { background-position: -104px -636px; }
+
+/* ================================================================
+   OROS (fila 0 → y=0)   col=(valor-1)*104
+   ================================================================ */
+.card-1-oros   { background-position:    0px   0px; }
+.card-3-oros   { background-position: -208px   0px; }
+.card-4-oros   { background-position: -312px   0px; }
+.card-5-oros   { background-position: -416px   0px; }
+.card-6-oros   { background-position: -520px   0px; }
+.card-7-oros   { background-position: -624px   0px; }
+
+/* ================================================================
+   COPAS (fila 1 → y=-159px)
+   ================================================================ */
+.card-3-copas  { background-position: -208px -159px; }
+.card-4-copas  { background-position: -312px -159px; }
+.card-5-copas  { background-position: -416px -159px; }
+.card-6-copas  { background-position: -520px -159px; }
+.card-7-copas  { background-position: -624px -159px; }
+
+/* ================================================================
+   ESPADAS (fila 2 → y=-318px)
+   ================================================================ */
+.card-1-espadas { background-position:    0px -318px; }
+.card-3-espadas { background-position: -208px -318px; }
+.card-4-espadas { background-position: -312px -318px; }
+.card-5-espadas { background-position: -416px -318px; }
+.card-6-espadas { background-position: -520px -318px; }
+.card-7-espadas { background-position: -624px -318px; }
+
+/* ================================================================
+   BASTOS (fila 3 → y=-477px)
+   ================================================================ */
+.card-1-bastos  { background-position:    0px -477px; }
+.card-3-bastos  { background-position: -208px -477px; }
+.card-4-bastos  { background-position: -312px -477px; }
+.card-5-bastos  { background-position: -416px -477px; }
+.card-6-bastos  { background-position: -520px -477px; }
+.card-7-bastos  { background-position: -624px -477px; }
