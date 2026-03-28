@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ClientToServerEvents, ServerToClientEvents, RoomSummary } from '@valencia-truc/shared-interfaces';
+import { Snackbar, Alert } from '@mui/material';
 
 const SOCKET_URL = 'http://localhost:3333';
 
@@ -15,6 +16,7 @@ const Home: React.FC = () => {
   const [roomName, setRoomName] = useState('');
   const [botCount, setBotCount] = useState(0);
   const [creating, setCreating] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(SOCKET_URL);
@@ -23,25 +25,6 @@ const Home: React.FC = () => {
     socket.on('connect', () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
     socket.on('rooms:list', setRooms);
-
-    socket.on('room:created', (room) => {
-      // playerId already saved before emit — just navigate
-      localStorage.setItem('truc_uid', room.uid);
-      socket.disconnect();
-      navigate(`/partida/${room.uid}`);
-    });
-
-    socket.on('room:joined', (room) => {
-      // playerId already saved before emit — just navigate
-      localStorage.setItem('truc_uid', room.uid);
-      socket.disconnect();
-      navigate(`/partida/${room.uid}`);
-    });
-
-    socket.on('room:error', (msg) => {
-      alert(msg);
-      setCreating(false);
-    });
 
     return () => { socket.disconnect(); };
   }, [navigate]);
@@ -56,6 +39,15 @@ const Home: React.FC = () => {
       name: roomName.trim() || undefined,
       bots: botCount,
       playerId,
+    }, (res) => {
+      if (res.status === 'ok' && res.room) {
+        localStorage.setItem('truc_uid', res.room.uid);
+        socketRef.current?.disconnect();
+        navigate(`/partida/${res.room.uid}`);
+      } else {
+        setErrorMsg(res.message || 'Error al crear la sala');
+        setCreating(false);
+      }
     });
   };
 
@@ -64,7 +56,15 @@ const Home: React.FC = () => {
     // Reuse existing playerId or generate a new stable one
     const playerId = localStorage.getItem('truc_player') ?? `player-${crypto.randomUUID()}`;
     localStorage.setItem('truc_player', playerId);
-    socketRef.current.emit('room:join', { uid, playerId });
+    socketRef.current.emit('room:join', { uid, playerId }, (res) => {
+      if (res.status === 'ok' && res.room) {
+        localStorage.setItem('truc_uid', res.room.uid);
+        socketRef.current?.disconnect();
+        navigate(`/partida/${res.room.uid}`);
+      } else {
+        setErrorMsg(res.message || 'Error al unir-se a la sala');
+      }
+    });
   };
 
   return (
@@ -209,6 +209,17 @@ const Home: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <Snackbar 
+        open={!!errorMsg} 
+        autoHideDuration={4000} 
+        onClose={() => setErrorMsg(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setErrorMsg(null)} severity="error" variant="filled" sx={{ width: '100%' }}>
+          {errorMsg}
+        </Alert>
+      </Snackbar>
     </div>
   );
 };

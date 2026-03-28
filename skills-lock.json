@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "skills": {
+    "docker-compose-orchestration": {
+      "source": "manutej/luxor-claude-marketplace",
+      "sourceType": "github",
+      "computedHash": "01831d0723a2ac491e233bd9bfdffdac8c0ae5500f140a3ca0382ac5f4a26159"
+    },
+    "docker-expert": {
+      "source": "personamanagmentlayer/pcl",
+      "sourceType": "github",
+      "computedHash": "7b7deb11bd89e83a44d466f2f27b36ff1ca39c2168f4dd6a9942bc4ea5f8aabc"
+    },
+    "socket-io": {
+      "source": "claude-dev-suite/claude-dev-suite",
+      "sourceType": "github",
+      "computedHash": "db530d917a8ad12522e3eaf040db5101bf7ac6cef066814577b8fb909a5b429b"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "9fb08ab39585f6f770d0c1c735f83e619aba2089d7ad50ba2a305eff715e08b9"
+    },
+    "xstate": {
+      "source": "seed-hypermedia/seed",
+      "sourceType": "github",
+      "computedHash": "c743411252fc09f07cda7bf01620337735397e5a607e93f4ba6560768c9aab72"
+    }
+  }
+}

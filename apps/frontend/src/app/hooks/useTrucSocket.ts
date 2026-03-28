@@ -16,7 +16,11 @@ export function useTrucSocket(roomUid: string, playerId: string) {
     newSocket.on('connect', () => {
       setConnectionStatus('connected');
       // Join the specific room by UID
-      newSocket.emit('room:join', { uid: roomUid, playerId });
+      newSocket.emit('room:join', { uid: roomUid, playerId }, (res) => {
+        if (res.status === 'error') {
+          setRoomError(res.message || 'No s\'ha pogut connectar a la partida.');
+        }
+      });
     });
 
     newSocket.on('game:state-update', (state) => {
@@ -24,9 +28,6 @@ export function useTrucSocket(roomUid: string, playerId: string) {
       // Persist latest state to localStorage for fast reload
       localStorage.setItem('truc_gamestate', JSON.stringify(state));
     });
-
-    newSocket.on('room:error', (msg) => setRoomError(msg));
-    newSocket.on('game:error', (msg) => setRoomError(msg));
 
     newSocket.on('room:destroyed', () => {
       setConnectionStatus('disconnected');
@@ -49,8 +50,6 @@ export function useTrucSocket(roomUid: string, playerId: string) {
     return () => {
       newSocket.off('connect');
       newSocket.off('game:state-update');
-      newSocket.off('room:error');
-      newSocket.off('game:error');
       newSocket.off('room:destroyed');
       newSocket.off('disconnect');
       newSocket.off('connect_error');
@@ -60,9 +59,13 @@ export function useTrucSocket(roomUid: string, playerId: string) {
 
   const sendAction = useCallback((action: TrucAction | string, payload?: unknown) => {
     if (socket && connectionStatus === 'connected') {
-      socket.emit('game:action', { type: action, payload });
+      socket.emit('game:action', { type: action, payload }, (res) => {
+        if (res.status === 'error') {
+          setRoomError(res.message || 'Error a l\'enviar l\'acció.');
+        }
+      });
     }
   }, [socket, connectionStatus]);
 
-  return { gameState, sendAction, connectionStatus, roomError };
+  return { gameState, sendAction, connectionStatus, roomError, clearError: () => setRoomError(null) };
 }

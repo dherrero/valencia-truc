@@ -25,6 +25,9 @@ export interface GameStateUpdate {
   allowedActions: TrucAction[];
   cartasRival: number;          // kept for backwards compat (first rival)
   otherPlayers: PlayerSeat[];   // all other 3 seats (right, top, left)
+  turnoActual?: string;
+  manoOriginal?: string;
+  cartasEnMesa?: { jugadorId: string; carta: Card }[];
 }
 
 export interface RoomSummary {
@@ -37,17 +40,22 @@ export interface RoomSummary {
 }
 
 export interface ClientToServerEvents {
-  'room:create': (payload: { name?: string; bots?: number; playerId: string }) => void;
-  'room:join': (payload: { uid: string; playerId: string }) => void;
-  'game:action': (action: { type: string; payload?: unknown }) => void;
+  'room:create': (
+    payload: { name?: string; bots?: number; playerId: string },
+    callback: (res: { status: 'ok' | 'error'; message?: string; room?: RoomSummary }) => void
+  ) => void;
+  'room:join': (
+    payload: { uid: string; playerId: string },
+    callback: (res: { status: 'ok' | 'error'; message?: string; room?: RoomSummary }) => void
+  ) => void;
+  'game:action': (
+    action: { type: string; payload?: unknown },
+    callback: (res: { status: 'ok' | 'error'; message?: string }) => void
+  ) => void;
 }
 
 export interface ServerToClientEvents {
   'rooms:list': (rooms: RoomSummary[]) => void;
-  'room:created': (room: RoomSummary) => void;
-  'room:joined': (room: RoomSummary) => void;
-  'room:error': (message: string) => void;
   'room:destroyed': (message: string) => void;
   'game:state-update': (state: GameStateUpdate) => void;
-  'game:error': (message: string) => void;
 }

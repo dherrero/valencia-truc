@@ -58,5 +58,9 @@ export function sanitizeGameState(
     allowedActions,
     cartasRival,
     otherPlayers,
+    turnoActual: context.turnoActual,
+    manoOriginal: context.manoOriginal,
+    // Eliminamos 'board' nativo y enviamos 'cartasEnMesa' (frontend usará cartasEnMesa o mapeará)
+    cartasEnMesa: context.cartasEnMesa || [],
   };
 }
