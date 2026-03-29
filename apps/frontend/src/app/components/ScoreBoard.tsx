@@ -27,7 +27,7 @@ export const ScoreBoard: React.FC<ScoreBoardProps> = ({ score }) => {
   };
 
   return (
-    <div className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 p-4 rounded-xl shadow-2xl backdrop-blur-md border border-emerald-700/50">
+    <div className="bg-black/50 p-4 rounded-xl shadow-2xl backdrop-blur-md border border-emerald-700/50">
       <h3 className="text-emerald-400 text-center font-bold mb-4 uppercase tracking-widest text-sm border-b border-emerald-700 pb-2">
         Cama Actual
       </h3>

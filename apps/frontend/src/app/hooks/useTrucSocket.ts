@@ -7,6 +7,7 @@ const SOCKET_URL = 'http://localhost:3333';
 export function useTrucSocket(roomUid: string, playerId: string) {
   const [socket, setSocket] = useState<Socket<ServerToClientEvents, ClientToServerEvents> | null>(null);
   const [gameState, setGameState] = useState<GameStateUpdate | null>(null);
+  const [gameOver, setGameOver] = useState<{ ganador: 'equipo1' | 'equipo2'; score: { equipo1: number; equipo2: number } } | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error' | 'disconnected'>('connecting');
   const [roomError, setRoomError] = useState<string | null>(null);
 
@@ -38,6 +39,10 @@ export function useTrucSocket(roomUid: string, playerId: string) {
 
     newSocket.on('disconnect', () => setConnectionStatus('disconnected'));
     newSocket.on('connect_error', () => setConnectionStatus('error'));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (newSocket as any).on('game:over', (data: { ganador: 'equipo1' | 'equipo2'; score: { equipo1: number; equipo2: number } }) => {
+      setGameOver(data);
+    });
 
     setSocket(newSocket);
 
@@ -53,6 +58,7 @@ export function useTrucSocket(roomUid: string, playerId: string) {
       newSocket.off('room:destroyed');
       newSocket.off('disconnect');
       newSocket.off('connect_error');
+      newSocket.off('game:over' as any);
       newSocket.disconnect();
     };
   }, [roomUid, playerId]);
@@ -67,5 +73,5 @@ export function useTrucSocket(roomUid: string, playerId: string) {
     }
   }, [socket, connectionStatus]);
 
-  return { gameState, sendAction, connectionStatus, roomError, clearError: () => setRoomError(null) };
+  return { gameState, gameOver, sendAction, connectionStatus, roomError, clearError: () => setRoomError(null) };
 }

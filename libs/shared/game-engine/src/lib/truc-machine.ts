@@ -72,7 +72,8 @@ export const trucMachine = createMachine(
           mano_1: {
             always: {
               guard: 'mesaLlena',
-              target: 'evaluar_baza_1'
+              target: 'evaluar_baza_1',
+              actions: 'evaluarGanadorBaza'
             },
             on: {
               JUGAR_CARTA: {
@@ -82,7 +83,6 @@ export const trucMachine = createMachine(
             }
           },
           evaluar_baza_1: {
-            entry: 'evaluarGanadorBaza',
             always: [
               { guard: 'bazaEmpatada', target: 'mano_desempate' },
               { target: 'mano_2' }
@@ -91,7 +91,8 @@ export const trucMachine = createMachine(
           mano_desempate: {
             always: {
               guard: 'todosEligieronDesempate',
-              target: 'evaluar_baza_desempate'
+              target: 'evaluar_baza_desempate',
+              actions: 'evaluarDesempateMano1'
             },
             on: {
               ELEGIR_CARTA_DESEMPATE: {
@@ -101,7 +102,6 @@ export const trucMachine = createMachine(
             }
           },
           evaluar_baza_desempate: {
-            entry: 'evaluarDesempateMano1',
             always: [
               { guard: 'equipo1GanaRonda', target: 'finalizar_ronda', actions: 'anotarRondaEq1' },
               { guard: 'equipo2GanaRonda', target: 'finalizar_ronda', actions: 'anotarRondaEq2' },
@@ -111,7 +111,8 @@ export const trucMachine = createMachine(
           mano_2: {
             always: {
               guard: 'mesaLlena',
-              target: 'evaluar_baza_2'
+              target: 'evaluar_baza_2',
+              actions: 'evaluarGanadorBaza'
             },
             on: {
               JUGAR_CARTA: {
@@ -121,7 +122,6 @@ export const trucMachine = createMachine(
             }
           },
           evaluar_baza_2: {
-            entry: 'evaluarGanadorBaza',
             always: [
               { guard: 'equipo1GanaRonda', target: 'finalizar_ronda', actions: 'anotarRondaEq1' },
               { guard: 'equipo2GanaRonda', target: 'finalizar_ronda', actions: 'anotarRondaEq2' },
@@ -131,7 +131,8 @@ export const trucMachine = createMachine(
           mano_3: {
             always: {
               guard: 'mesaLlena',
-              target: 'evaluar_baza_3'
+              target: 'evaluar_baza_3',
+              actions: 'evaluarGanadorBaza'
             },
             on: {
               JUGAR_CARTA: {
@@ -141,7 +142,6 @@ export const trucMachine = createMachine(
             }
           },
           evaluar_baza_3: {
-            entry: 'evaluarGanadorBaza',
             always: [
               { guard: 'equipo1GanaRonda', target: 'finalizar_ronda', actions: 'anotarRondaEq1' },
               { guard: 'equipo2GanaRonda', target: 'finalizar_ronda', actions: 'anotarRondaEq2' },
@@ -149,6 +149,17 @@ export const trucMachine = createMachine(
             ]
           },
           finalizar_ronda: {
+            always: [
+              { guard: 'equipoGana24', target: 'game_over' }
+            ],
+            on: {
+              REPARTIR: {
+                target: 'mano_1',
+                actions: 'repartirCartas'
+              }
+            }
+          },
+          game_over: {
             type: 'final'
           }
         }
@@ -161,7 +172,8 @@ export const trucMachine = createMachine(
               CANTAR_ENVIDO: {
                 target: 'cantado',
                 guard: 'isManoValida_Envido'
-              }
+              },
+              REPARTIR: { target: 'disponible' }
             }
           },
           cantado: {
@@ -173,14 +185,17 @@ export const trucMachine = createMachine(
               NO_QUIERO: {
                 target: 'finalizado',
                 actions: 'rechazarEnvido'
-              }
+              },
+              REPARTIR: { target: 'disponible' }
             }
           },
           respondido: {
             always: 'finalizado'
           },
           finalizado: {
-            type: 'final'
+            on: {
+              REPARTIR: { target: 'disponible' }
+            }
           }
         }
       },
@@ -189,57 +204,69 @@ export const trucMachine = createMachine(
         states: {
           truc_disponible: {
             on: {
-              CANTAR_TRUC: { target: 'truc_cantado', actions: 'registrarCantadaTruc' }
+              CANTAR_TRUC: { target: 'truc_cantado', actions: 'registrarCantadaTruc' },
+              REPARTIR: { target: 'truc_disponible' }
             }
           },
           truc_cantado: {
             on: {
               QUIERO: { target: 'retruc_disponible', actions: 'aceptarTruc' },
               NO_QUIERO: { target: 'finalizar_juego_por_rechazo', actions: 'rechazarTruc' },
-              RETRUC: { target: 'retruc_cantado', actions: 'registrarCantadaRetruc', guard: 'esEquipoContrario' }
+              RETRUC: { target: 'retruc_cantado', actions: 'registrarCantadaRetruc', guard: 'esEquipoContrario' },
+              REPARTIR: { target: 'truc_disponible' }
             }
           },
           retruc_disponible: {
             on: {
-              RETRUC: { target: 'retruc_cantado', actions: 'registrarCantadaRetruc', guard: 'esEquipoContrario' }
+              RETRUC: { target: 'retruc_cantado', actions: 'registrarCantadaRetruc', guard: 'esEquipoContrario' },
+              REPARTIR: { target: 'truc_disponible' }
             }
           },
           retruc_cantado: {
             on: {
               QUIERO: { target: 'vale_quatre_disponible', actions: 'aceptarRetruc' },
               NO_QUIERO: { target: 'finalizar_juego_por_rechazo', actions: 'rechazarTruc' },
-              VALE_QUATRE: { target: 'vale_quatre_cantado', actions: 'registrarCantadaValeQuatre', guard: 'esEquipoContrario' }
+              VALE_QUATRE: { target: 'vale_quatre_cantado', actions: 'registrarCantadaValeQuatre', guard: 'esEquipoContrario' },
+              REPARTIR: { target: 'truc_disponible' }
             }
           },
           vale_quatre_disponible: {
             on: {
-              VALE_QUATRE: { target: 'vale_quatre_cantado', actions: 'registrarCantadaValeQuatre', guard: 'esEquipoContrario' }
+              VALE_QUATRE: { target: 'vale_quatre_cantado', actions: 'registrarCantadaValeQuatre', guard: 'esEquipoContrario' },
+              REPARTIR: { target: 'truc_disponible' }
             }
           },
           vale_quatre_cantado: {
             on: {
               QUIERO: { target: 'juego_fuera_disponible', actions: 'aceptarValeQuatre' },
               NO_QUIERO: { target: 'finalizar_juego_por_rechazo', actions: 'rechazarTruc' },
-              JUEGO_FUERA: { target: 'juego_fuera_cantado', actions: 'registrarCantadaJuegoFuera', guard: 'esEquipoContrario' }
+              JUEGO_FUERA: { target: 'juego_fuera_cantado', actions: 'registrarCantadaJuegoFuera', guard: 'esEquipoContrario' },
+              REPARTIR: { target: 'truc_disponible' }
             }
           },
           juego_fuera_disponible: {
             on: {
-              JUEGO_FUERA: { target: 'juego_fuera_cantado', actions: 'registrarCantadaJuegoFuera', guard: 'esEquipoContrario' }
+              JUEGO_FUERA: { target: 'juego_fuera_cantado', actions: 'registrarCantadaJuegoFuera', guard: 'esEquipoContrario' },
+              REPARTIR: { target: 'truc_disponible' }
             }
           },
           juego_fuera_cantado: {
             on: {
               QUIERO: { target: 'esperando_fin_juego', actions: 'aceptarJuegoFuera' },
-              NO_QUIERO: { target: 'finalizar_juego_por_rechazo', actions: 'rechazarTruc' }
+              NO_QUIERO: { target: 'finalizar_juego_por_rechazo', actions: 'rechazarTruc' },
+              REPARTIR: { target: 'truc_disponible' }
             }
           },
           esperando_fin_juego: {
-            type: 'final'
+            on: {
+              REPARTIR: { target: 'truc_disponible' }
+            }
           },
           finalizar_juego_por_rechazo: {
-            type: 'final',
-            entry: 'abortarRondaPorRechazo'
+            entry: 'abortarRondaPorRechazo',
+            on: {
+              REPARTIR: { target: 'truc_disponible' }
+            }
           }
         }
       }
@@ -247,6 +274,10 @@ export const trucMachine = createMachine(
   },
   {
     guards: {
+      equipoGana24: (args: any) => {
+        const { equipo1, equipo2 } = args.context.puntuacionCama;
+        return equipo1 >= 24 || equipo2 >= 24;
+      },
       isManoValida_Envido: (args: any) => args.context.manoActual === 1,
       mesaLlena: (args: any) => args.context.cartasEnMesa.length === args.context.jugadoresOrden.length,
       bazaEmpatada: (args: any) => {

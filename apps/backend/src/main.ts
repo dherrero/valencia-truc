@@ -128,8 +128,42 @@ function createRoom(name: string, botCount: number): Room {
   const actor = createActor(trucMachine);
   actor.start();
 
+  let autorepartirTimeout: ReturnType<typeof setTimeout> | null = null;
+
   // Subscribe to state changes with debounced emit
-  const actorSubscription = actor.subscribe(() => emitStateToRoom(uid, actor));
+  const actorSubscription = actor.subscribe((state) => {
+    emitStateToRoom(uid, actor);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rondaState = (state as any).value?.ronda;
+
+    // Game over: one team reached 24 points
+    if (rondaState === 'game_over') {
+      const ctx = state.context as TrucContext;
+      const ganador = ctx.puntuacionCama.equipo1 >= 24 ? 'equipo1' : 'equipo2';
+      console.log(`[GAME OVER] Room ${uid} — ${ganador} wins!`);
+      io.in(uid).emit('game:over' as any, { ganador, score: ctx.puntuacionCama });
+      return;
+    }
+
+    // Auto-deal next round when current round ends (no game over yet)
+    if (rondaState === 'finalizar_ronda') {
+      if (!autorepartirTimeout) {
+        autorepartirTimeout = setTimeout(() => {
+          autorepartirTimeout = null;
+          const r = rooms.get(uid);
+          if (!r) return;
+          // Re-check state in case game_over was reached between timeout fire
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const currentRonda = (r.actor.getSnapshot() as any).value?.ronda;
+          if (currentRonda === 'game_over') return;
+          const allPlayers = [...r.playerIds, ...r.botIds];
+          console.log(`[AUTO-REPARTIR] Room ${uid} — starting new round with players: ${allPlayers.join(', ')}`);
+          r.actor.send({ type: 'REPARTIR', jugadores: allPlayers } as unknown as TrucEvent);
+        }, 2000);
+      }
+    }
+  });
 
   const room: Room = {
     uid, name, actor, actorSubscription,

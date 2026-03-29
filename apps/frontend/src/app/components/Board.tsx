@@ -42,7 +42,7 @@ const SeatArea: React.FC<{ seat: PlayerSeat; isTurn?: boolean; isMano?: boolean 
 
 // ── Main Board ─────────────────────────────────────────────────────────────────
 export const Board: React.FC<{ roomUid: string; playerId: string }> = ({ roomUid, playerId }) => {
-  const { gameState, sendAction, connectionStatus, roomError, clearError } = useTrucSocket(roomUid, playerId);
+  const { gameState, gameOver, sendAction, connectionStatus, roomError, clearError } = useTrucSocket(roomUid, playerId);
 
   const hasHand = (gameState?.hand?.length ?? 0) > 0;
   const isLobby = gameState != null && !hasHand;
@@ -62,6 +62,54 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({ roomUid
             {connectionStatus === 'connecting' ? 'Connectant al servidor…' : 'Desconnectat'}
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // ── Game Over screen ─────────────────────────────────────────────────────────
+  if (gameOver) {
+    const isEquipo1 = gameOver.ganador === 'equipo1';
+    const winnerLabel = isEquipo1 ? 'Nosaltres' : 'Rivals';
+    // equipo1 = even indices in jugadoresOrden. We can't know player index here,
+    // so display the winning team label generically.
+    const weWon = isEquipo1;
+
+    return (
+      <div className="fixed inset-0 bg-emerald-950 flex items-center justify-center z-50">
+        <div className="absolute inset-0 opacity-5"
+          style={{ backgroundImage: 'repeating-linear-gradient(45deg, #064e3b 0, #064e3b 1px, transparent 0, transparent 50%)', backgroundSize: '20px 20px' }}
+        />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="relative z-10 flex flex-col items-center gap-6 text-center px-8"
+        >
+          <div className="text-8xl">{weWon ? '🏆' : '😔'}</div>
+          <h1 className="text-5xl font-black text-white" style={{ textShadow: '0 0 40px rgba(52,211,153,0.6)' }}>
+            {weWon ? '¡Victoria!' : '¡Derrota!'}
+          </h1>
+          <p className="text-emerald-300 text-xl">
+            Guanya <span className="font-bold text-white">{winnerLabel}</span>
+          </p>
+          <div className="flex gap-8 bg-black/30 rounded-2xl px-10 py-6 border border-emerald-700/40">
+            <div className="text-center">
+              <p className="text-emerald-400 text-sm uppercase tracking-widest mb-1">Nosotros</p>
+              <p className="text-4xl font-black text-white">{gameOver.score.equipo1}</p>
+            </div>
+            <div className="text-emerald-700 text-4xl font-light self-center">—</div>
+            <div className="text-center">
+              <p className="text-red-400 text-sm uppercase tracking-widest mb-1">Rivals</p>
+              <p className="text-4xl font-black text-white">{gameOver.score.equipo2}</p>
+            </div>
+          </div>
+          <motion.a
+            href="/"
+            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+            className="mt-4 px-10 py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-black text-xl rounded-2xl shadow-2xl transition-colors cursor-pointer"
+          >
+            Tornar al Lobby
+          </motion.a>
+        </motion.div>
       </div>
     );
   }
@@ -107,7 +155,7 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({ roomUid
 
   // ── Game table ──────────────────────────────────────────────────────────────
   return (
-    <div className="relative w-full h-screen bg-emerald-900 overflow-hidden select-none">
+    <div className="fixed inset-0 bg-emerald-900 overflow-hidden select-none">
 
       {/* ── SCOREBOARD ── */}
       <div className="absolute top-4 left-4 z-30">
@@ -141,8 +189,8 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({ roomUid
               Rival · {leftSeat.playerId.startsWith('bot-') ? '🤖 Bot' : `👤 ${leftSeat.playerId.slice(0, 8)}…`}
             </p>
             <div className="flex flex-row items-center gap-4">
-              <div className={`relative flex flex-col items-center gap-2 p-3 rounded-xl ring-1 ring-emerald-500/30 min-w-[120px] min-h-[90px] ${gameState?.turnoActual === leftSeat.playerId ? 'ring-2 ring-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.6)]' : ''}`}>
-                <div className="flex flex-row justify-center items-center gap-[-10px] scale-75 origin-center">
+              <div className={`relative flex flex-col items-center gap-2 p-3 rounded-xl ring-1 ring-emerald-500/30 min-w-[90px] min-h-[120px] ${gameState?.turnoActual === leftSeat.playerId ? 'ring-2 ring-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.6)]' : ''}`}>
+                <div className="flex flex-col justify-center items-center -space-y-12 scale-75 origin-center">
                   <AnimatePresence>
                     {Array.from({ length: leftSeat.cardCount }).map((_, i) => (
                       <div key={i} className="-rotate-90">
@@ -172,8 +220,8 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({ roomUid
               {gameState?.manoOriginal === rightSeat.playerId && (
                  <div title="mà de la partida" className="w-4 h-4 bg-red-500 rounded-full border border-white shadow-md z-10" />
               )}
-              <div className={`relative flex flex-col items-center gap-2 p-3 rounded-xl ring-1 ring-emerald-500/30 min-w-[120px] min-h-[90px] ${gameState?.turnoActual === rightSeat.playerId ? 'ring-2 ring-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.6)]' : ''}`}>
-                <div className="flex flex-row justify-center items-center gap-[-10px] scale-75 origin-center">
+              <div className={`relative flex flex-col items-center gap-2 p-3 rounded-xl ring-1 ring-emerald-500/30 min-w-[90px] min-h-[120px] ${gameState?.turnoActual === rightSeat.playerId ? 'ring-2 ring-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.6)]' : ''}`}>
+                <div className="flex flex-col justify-center items-center -space-y-12 scale-75 origin-center">
                   <AnimatePresence>
                     {Array.from({ length: rightSeat.cardCount }).map((_, i) => (
                       <div key={i} className="rotate-90">
