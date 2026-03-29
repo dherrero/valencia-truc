@@ -6,22 +6,11 @@ interface ScoreBoardProps {
 
 export const ScoreBoard: React.FC<ScoreBoardProps> = ({ score }) => {
   const renderPoints = (points: number) => {
-    // Helper to visually represent points (Galls = 5, Trucos = 1)
-    const galls = Math.floor((points % 30) / 5);
-    const trucos = (points % 30) % 5;
     return (
-      <div className="flex flex-col items-center">
-        <div className="text-yellow-400 font-bold">
-          {Array.from({ length: galls }).map((_, i) => (
-            <span key={`gall-${i}`} className="mr-1 text-2xl">|/|\|</span>
-          ))}
+      <div className="flex flex-col items-center mt-1 mb-2">
+        <div className="text-4xl font-black text-yellow-400 drop-shadow-md">
+          {points}
         </div>
-        <div className="text-white font-bold">
-          {Array.from({ length: trucos }).map((_, i) => (
-            <span key={`truco-${i}`} className="mr-1 text-xl">|</span>
-          ))}
-        </div>
-        <div className="text-sm text-gray-300">({points} pts)</div>
       </div>
     );
   };

@@ -72,13 +72,20 @@ export const trucMachine = createMachine(
           mano_1: {
             always: {
               guard: 'mesaLlena',
-              target: 'evaluar_baza_1',
-              actions: 'evaluarGanadorBaza'
+              target: 'esperando_evaluar_1'
             },
             on: {
               JUGAR_CARTA: {
                 actions: 'jugarCarta',
                 guard: 'esSuTurnoYTieneCarta'
+              }
+            }
+          },
+          esperando_evaluar_1: {
+            after: {
+              1500: {
+                target: 'evaluar_baza_1',
+                actions: 'evaluarGanadorBaza'
               }
             }
           },
@@ -91,13 +98,20 @@ export const trucMachine = createMachine(
           mano_desempate: {
             always: {
               guard: 'todosEligieronDesempate',
-              target: 'evaluar_baza_desempate',
-              actions: 'evaluarDesempateMano1'
+              target: 'esperando_evaluar_desempate'
             },
             on: {
               ELEGIR_CARTA_DESEMPATE: {
                 actions: 'elegirCartaDesempate',
                 guard: 'tieneCartaYNoHaElegidoDesempate'
+              }
+            }
+          },
+          esperando_evaluar_desempate: {
+            after: {
+              1500: {
+                target: 'evaluar_baza_desempate',
+                actions: 'evaluarDesempateMano1'
               }
             }
           },
@@ -111,13 +125,20 @@ export const trucMachine = createMachine(
           mano_2: {
             always: {
               guard: 'mesaLlena',
-              target: 'evaluar_baza_2',
-              actions: 'evaluarGanadorBaza'
+              target: 'esperando_evaluar_2'
             },
             on: {
               JUGAR_CARTA: {
                 actions: 'jugarCarta',
                 guard: 'esSuTurnoYTieneCarta'
+              }
+            }
+          },
+          esperando_evaluar_2: {
+            after: {
+              1500: {
+                target: 'evaluar_baza_2',
+                actions: 'evaluarGanadorBaza'
               }
             }
           },
@@ -131,13 +152,20 @@ export const trucMachine = createMachine(
           mano_3: {
             always: {
               guard: 'mesaLlena',
-              target: 'evaluar_baza_3',
-              actions: 'evaluarGanadorBaza'
+              target: 'esperando_evaluar_3'
             },
             on: {
               JUGAR_CARTA: {
                 actions: 'jugarCarta',
                 guard: 'esSuTurnoYTieneCarta'
+              }
+            }
+          },
+          esperando_evaluar_3: {
+            after: {
+              1500: {
+                target: 'evaluar_baza_3',
+                actions: 'evaluarGanadorBaza'
               }
             }
           },

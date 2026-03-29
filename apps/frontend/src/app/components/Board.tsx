@@ -243,13 +243,20 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({ roomUid
           <AnimatePresence>
             {(gameState?.cartasEnMesa?.length ?? 0) > 0
               ? gameState!.cartasEnMesa!.map(({ jugadorId, carta }, idx: number) => {
-                  // Calcular offset dependiendo de quién la tiró (opcional) o aleatorio
-                  // De momento simple rotación
+                  // Calcular abanico para que se vea la esquina superior izquierda (índice y palo)
                   return (
                     <motion.div key={`board-${carta.suit}-${carta.value}-${idx}`}
-                      initial={{ scale: 0, rotate: idx % 2 === 0 ? -15 : 15 }}
-                      animate={{ scale: 1, rotate: (idx % 3) * 10 - 10 }}
-                      className="absolute"
+                      initial={{ scale: 0, opacity: 0, rotate: -30 }}
+                      animate={{ 
+                        scale: 1, 
+                        opacity: 1,
+                        x: idx * 35 - 45, // Desplazamiento horizontal para mostrar esquina izquierda
+                        y: idx * 5 - 10,  // Ligero encaje vertical
+                        rotate: idx * 12 - 18 // Rotación en abanico
+                      }}
+                      transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                      className="absolute drop-shadow-2xl"
+                      style={{ zIndex: idx }}
                     >
                       <CardComponent card={carta} isPlayed />
                     </motion.div>
