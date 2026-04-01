@@ -16,7 +16,8 @@
           "format": [
             "cjs"
           ],
-          "bundle": false,
+          "bundle": true,
+          "externalDependencies": "all",
           "main": "apps/backend/src/main.ts",
           "tsConfig": "apps/backend/tsconfig.app.json",
           "assets": [

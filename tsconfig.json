@@ -10,9 +10,6 @@
       "path": "./apps/backend"
     },
     {
-      "path": "./libs/shared-logic"
-    },
-    {
       "path": "./libs/shared/interfaces"
     },
     {
