@@ -5,7 +5,12 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import { createClient } from 'redis';
 import { createActor, AnyActorRef } from 'xstate';
 import { randomUUID } from 'crypto';
-import { trucMachine, TrucContext, TrucEvent } from '@valencia-truc/shared-game-engine';
+import {
+  getAllowedActions,
+  trucMachine,
+  TrucContext,
+  TrucEvent,
+} from '@valencia-truc/shared-game-engine';
 import {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -19,7 +24,7 @@ const app = express();
 app.use(express.json());
 const httpServer = createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
-  cors: { origin: '*' }
+  cors: { origin: '*' },
 });
 
 // ---------- Redis Setup ----------
@@ -27,12 +32,17 @@ const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 const pubClient = createClient({ url: REDIS_URL });
 const subClient = pubClient.duplicate();
 
-Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
-  io.adapter(createAdapter(pubClient, subClient));
-  console.log(`📡 Conectado a Redis en ${REDIS_URL} - Adaptador activado.`);
-}).catch((err) => {
-  console.warn('⚠️ No se pudo conectar a Redis, funcionando en modo memoria local. Error:', err.message);
-});
+Promise.all([pubClient.connect(), subClient.connect()])
+  .then(() => {
+    io.adapter(createAdapter(pubClient, subClient));
+    console.log(`📡 Conectado a Redis en ${REDIS_URL} - Adaptador activado.`);
+  })
+  .catch((err) => {
+    console.warn(
+      '⚠️ No se pudo conectar a Redis, funcionando en modo memoria local. Error:',
+      err.message,
+    );
+  });
 
 // ---------- Room Model ----------
 interface Room {
@@ -40,9 +50,9 @@ interface Room {
   name: string;
   actor: AnyActorRef;
   actorSubscription: { unsubscribe: () => void };
-  playerIds: string[];   // human players
-  botIds: string[];      // bot player IDs
-  bots: TrucBot[];       // bot instances (for cleanup)
+  playerIds: string[]; // human players
+  botIds: string[]; // bot player IDs
+  bots: TrucBot[]; // bot instances (for cleanup)
   botCount: number;
   status: 'waiting' | 'playing';
   emitDebounce: ReturnType<typeof setTimeout> | null;
@@ -52,14 +62,17 @@ const rooms = new Map<string, Room>();
 
 // XState action → machine event type mapping
 const actionToEvent: Record<string, string> = {
+  [TrucAction.REPARTIR]: 'REPARTIR',
   [TrucAction.JUGAR_CARTA]: 'JUGAR_CARTA',
   [TrucAction.TRUC]: 'CANTAR_TRUC',
   [TrucAction.RETRUC]: 'RETRUC',
   [TrucAction.VALE_QUATRE]: 'VALE_QUATRE',
+  [TrucAction.JUEGO_FUERA]: 'JUEGO_FUERA',
   [TrucAction.ENVIDO]: 'CANTAR_ENVIDO',
+  [TrucAction.TORNA_CHO]: 'TORNA_CHO',
   [TrucAction.QUIERO]: 'QUIERO',
   [TrucAction.NO_QUIERO]: 'NO_QUIERO',
-  'REPARTIR': 'REPARTIR',
+  [TrucAction.ELEGIR_CARTA_DESEMPATE]: 'ELEGIR_CARTA_DESEMPATE',
 };
 
 // ---------- Helpers ----------
@@ -91,35 +104,56 @@ function emitStateToRoom(roomUid: string, actor: AnyActorRef) {
 
   room.emitDebounce = setTimeout(() => {
     room.emitDebounce = null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const snapshot = actor.getSnapshot() as any;
+    const snapshot = actor.getSnapshot();
     const context = snapshot.context as TrucContext;
     const board: import('@valencia-truc/shared-interfaces').Card[] = [];
-    const nextEvents: TrucAction[] = [];
     const allPlayerIds = [...room.playerIds, ...room.botIds];
 
-    io.in(roomUid).fetchSockets().then(sockets => {
-      sockets.forEach(s => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const pId = (s as any).playerId as string | undefined;
-        if (pId) {
-          const sanitized = sanitizeGameState(context, pId, nextEvents, board, allPlayerIds);
-          console.log(`[STATE] Room ${roomUid} | pId=${pId} | turnoActual=${context.turnoActual} | manoOriginal=${context.manoOriginal} | cartasEnMesa=${context.cartasEnMesa?.length}`);
-          s.emit('game:state-update', sanitized);
-        }
+    io.in(roomUid)
+      .fetchSockets()
+      .then((sockets) => {
+        sockets.forEach((s) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const pId = (s as any).playerId as string | undefined;
+          if (pId) {
+            const allowedActions = getAllowedActions(snapshot, pId);
+            const sanitized = sanitizeGameState(
+              context,
+              pId,
+              allowedActions,
+              board,
+              allPlayerIds,
+            );
+            console.log(
+              `[STATE] Room ${roomUid} | pId=${pId} | turnoActual=${context.turnoActual} | manoOriginal=${context.manoOriginal} | cartasEnMesa=${context.cartasEnMesa?.length}`,
+            );
+            s.emit('game:state-update', sanitized);
+          }
+        });
+      })
+      .catch(() => {
+        /* socket already closed */
       });
-    }).catch(() => { /* socket already closed */ });
   }, 50); // 50ms debounce
 }
 
-function emitInitialState(socket: Socket, playerId: string, actor: AnyActorRef, allPlayerIds: string[]) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const snapshot = actor.getSnapshot() as any;
+function emitInitialState(
+  socket: Socket,
+  playerId: string,
+  actor: AnyActorRef,
+  allPlayerIds: string[],
+) {
+  const snapshot = actor.getSnapshot();
   const context = snapshot.context as TrucContext;
   const board: import('@valencia-truc/shared-interfaces').Card[] = [];
-  const noCardsDealt = !context.cartasJugadores || Object.keys(context.cartasJugadores).length === 0;
-  const allowedActions: TrucAction[] = noCardsDealt ? ['REPARTIR' as TrucAction] : [];
-  const sanitized = sanitizeGameState(context, playerId, allowedActions, board, allPlayerIds);
+  const allowedActions = getAllowedActions(snapshot, playerId);
+  const sanitized = sanitizeGameState(
+    context,
+    playerId,
+    allowedActions,
+    board,
+    allPlayerIds,
+  );
   socket.emit('game:state-update', sanitized);
 }
 
@@ -142,7 +176,10 @@ function createRoom(name: string, botCount: number): Room {
       const ctx = state.context as TrucContext;
       const ganador = ctx.puntuacionCama.equipo1 >= 24 ? 'equipo1' : 'equipo2';
       console.log(`[GAME OVER] Room ${uid} — ${ganador} wins!`);
-      io.in(uid).emit('game:over' as any, { ganador, score: ctx.puntuacionCama });
+      io.in(uid).emit('game:over' as any, {
+        ganador,
+        score: ctx.puntuacionCama,
+      });
       return;
     }
 
@@ -158,17 +195,29 @@ function createRoom(name: string, botCount: number): Room {
           const currentRonda = (r.actor.getSnapshot() as any).value?.ronda;
           if (currentRonda === 'game_over') return;
           const allPlayers = [...r.playerIds, ...r.botIds];
-          console.log(`[AUTO-REPARTIR] Room ${uid} — starting new round with players: ${allPlayers.join(', ')}`);
-          r.actor.send({ type: 'REPARTIR', jugadores: allPlayers } as unknown as TrucEvent);
+          console.log(
+            `[AUTO-REPARTIR] Room ${uid} — starting new round with players: ${allPlayers.join(', ')}`,
+          );
+          r.actor.send({
+            type: 'REPARTIR',
+            jugadores: allPlayers,
+          } as unknown as TrucEvent);
         }, 2000);
       }
     }
   });
 
   const room: Room = {
-    uid, name, actor, actorSubscription,
-    playerIds: [], botIds: [], bots: [],
-    botCount: 0, status: 'waiting', emitDebounce: null
+    uid,
+    name,
+    actor,
+    actorSubscription,
+    playerIds: [],
+    botIds: [],
+    bots: [],
+    botCount: 0,
+    status: 'waiting',
+    emitDebounce: null,
   };
   rooms.set(uid, room);
 
@@ -176,7 +225,7 @@ function createRoom(name: string, botCount: number): Room {
   const clampedBots = Math.min(botCount, 3);
   for (let i = 1; i <= clampedBots; i++) {
     const botId = `bot-${uid.slice(0, 8)}-${i}`;
-    const bot = new TrucBot(actor, botId);
+    const bot = new TrucBot(actor, botId, () => [...room.playerIds]);
     room.bots.push(bot);
     room.botIds.push(botId);
     room.botCount++;
@@ -190,7 +239,7 @@ function destroyRoom(uid: string) {
   if (!room) return;
 
   // Stop all bot subscriptions first
-  room.bots.forEach(bot => bot.stop());
+  room.bots.forEach((bot) => bot.stop());
 
   // Cancel debounced emit
   if (room.emitDebounce) clearTimeout(room.emitDebounce);
@@ -238,7 +287,10 @@ io.on('connection', (socket: TrucSocket) => {
 
     callback({ status: 'ok', room: getRoomSummary(room) });
     broadcastRoomsList();
-    emitInitialState(socket, playerId, room.actor, [...room.playerIds, ...room.botIds]);
+    emitInitialState(socket, playerId, room.actor, [
+      ...room.playerIds,
+      ...room.botIds,
+    ]);
   });
 
   // ----- Join room -----
@@ -267,7 +319,10 @@ io.on('connection', (socket: TrucSocket) => {
 
     callback({ status: 'ok', room: getRoomSummary(room) });
     broadcastRoomsList();
-    emitInitialState(socket, playerId, room.actor, [...room.playerIds, ...room.botIds]);
+    emitInitialState(socket, playerId, room.actor, [
+      ...room.playerIds,
+      ...room.botIds,
+    ]);
   });
 
   // ----- Game action -----
@@ -281,12 +336,36 @@ io.on('connection', (socket: TrucSocket) => {
       return;
     }
 
+    const snapshot = room.actor.getSnapshot();
+    const allowedActions = getAllowedActions(snapshot, playerId ?? '');
+    const requestedAction = action.type as TrucAction;
+    if (!allowedActions.includes(requestedAction)) {
+      callback({
+        status: 'error',
+        message: 'Aquesta acció no està permesa ara mateix.',
+      });
+      return;
+    }
+
     const eventType = actionToEvent[action.type] || action.type;
     // For REPARTIR, include all player IDs so the machine deals to correct hands
     if (eventType === 'REPARTIR') {
-      room.actor.send({ type: 'REPARTIR', jugadores: [...room.playerIds, ...room.botIds] } as unknown as TrucEvent);
+      room.actor.send({
+        type: 'REPARTIR',
+        jugadores: [...room.playerIds, ...room.botIds],
+      } as unknown as TrucEvent);
+    } else if (eventType === 'ELEGIR_CARTA_DESEMPATE') {
+      room.actor.send({
+        type: 'ELEGIR_CARTA_DESEMPATE',
+        jugadorId: playerId,
+        cartaDescubierta: action.payload,
+      } as unknown as TrucEvent);
     } else {
-      room.actor.send({ type: eventType, jugadorId: playerId, carta: action.payload } as unknown as TrucEvent);
+      room.actor.send({
+        type: eventType,
+        jugadorId: playerId,
+        carta: action.payload,
+      } as unknown as TrucEvent);
     }
 
     // Mark as playing once first action happens
@@ -294,7 +373,7 @@ io.on('connection', (socket: TrucSocket) => {
       room.status = 'playing';
       broadcastRoomsList();
     }
-    
+
     callback({ status: 'ok' });
   });
 
@@ -307,7 +386,7 @@ io.on('connection', (socket: TrucSocket) => {
     const room = rooms.get(uid);
     if (!room) return;
 
-    room.playerIds = room.playerIds.filter(id => id !== socket.playerId);
+    room.playerIds = room.playerIds.filter((id) => id !== socket.playerId);
 
     // Only destroy if no humans left AND no bots.
     // Use a grace period (10s) to handle the Home→GamePage socket transition:

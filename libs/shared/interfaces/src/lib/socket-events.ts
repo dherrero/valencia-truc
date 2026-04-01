@@ -1,20 +1,23 @@
 import { Card } from './shared-interfaces.js';
 
 export enum TrucAction {
+  REPARTIR = 'REPARTIR',
   TRUC = 'TRUC',
   RETRUC = 'RETRUC',
   VALE_QUATRE = 'VALE_QUATRE',
+  JUEGO_FUERA = 'JUEGO_FUERA',
   ENVIDO = 'ENVIDO',
   TORNA_CHO = 'TORNA_CHO',
   QUIERO = 'QUIERO',
   NO_QUIERO = 'NO_QUIERO',
   JUGAR_CARTA = 'JUGAR_CARTA',
+  ELEGIR_CARTA_DESEMPATE = 'ELEGIR_CARTA_DESEMPATE',
 }
 
 export interface PlayerSeat {
   playerId: string;
   cardCount: number;
-  isPartner: boolean;           // true = teammate, false = rival
+  isPartner: boolean; // true = teammate, false = rival
   position: 'top' | 'right' | 'left';
 }
 
@@ -23,8 +26,8 @@ export interface GameStateUpdate {
   hand: Card[];
   score: { equipo1: number; equipo2: number };
   allowedActions: TrucAction[];
-  cartasRival: number;          // kept for backwards compat (first rival)
-  otherPlayers: PlayerSeat[];   // all other 3 seats (right, top, left)
+  cartasRival: number; // kept for backwards compat (first rival)
+  otherPlayers: PlayerSeat[]; // all other 3 seats (right, top, left)
   turnoActual?: string;
   manoOriginal?: string;
   cartasEnMesa?: { jugadorId: string; carta: Card }[];
@@ -42,15 +45,23 @@ export interface RoomSummary {
 export interface ClientToServerEvents {
   'room:create': (
     payload: { name?: string; bots?: number; playerId: string },
-    callback: (res: { status: 'ok' | 'error'; message?: string; room?: RoomSummary }) => void
+    callback: (res: {
+      status: 'ok' | 'error';
+      message?: string;
+      room?: RoomSummary;
+    }) => void,
   ) => void;
   'room:join': (
     payload: { uid: string; playerId: string },
-    callback: (res: { status: 'ok' | 'error'; message?: string; room?: RoomSummary }) => void
+    callback: (res: {
+      status: 'ok' | 'error';
+      message?: string;
+      room?: RoomSummary;
+    }) => void,
   ) => void;
   'game:action': (
     action: { type: string; payload?: unknown },
-    callback: (res: { status: 'ok' | 'error'; message?: string }) => void
+    callback: (res: { status: 'ok' | 'error'; message?: string }) => void,
   ) => void;
 }
 

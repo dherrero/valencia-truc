@@ -9,18 +9,54 @@ interface ActionButtonsProps {
 }
 
 const actionConfig: Record<TrucAction, { label: string; color: string }> = {
-  [TrucAction.TRUC]: { label: '¡Truco!', color: 'bg-yellow-500 hover:bg-yellow-600 text-yellow-900' },
-  [TrucAction.RETRUC]: { label: '¡Retruco!', color: 'bg-orange-500 hover:bg-orange-600 text-orange-900' },
-  [TrucAction.VALE_QUATRE]: { label: '¡Vale Quatre!', color: 'bg-red-600 hover:bg-red-700 text-white' },
-  [TrucAction.ENVIDO]: { label: '¡Envido!', color: 'bg-blue-500 hover:bg-blue-600 text-white' },
-  [TrucAction.TORNA_CHO]: { label: '¡Torna-cho!', color: 'bg-indigo-500 hover:bg-indigo-600 text-white' },
-  [TrucAction.QUIERO]: { label: '¡Quiero!', color: 'bg-emerald-500 hover:bg-emerald-600 text-white' },
-  [TrucAction.NO_QUIERO]: { label: 'No quiero', color: 'bg-gray-500 hover:bg-gray-600 text-white' },
-  [TrucAction.JUGAR_CARTA]: { label: 'Jugar Carta', color: '' } // Not rendered as a button usually
+  [TrucAction.REPARTIR]: {
+    label: 'Repartir',
+    color: 'bg-emerald-500 hover:bg-emerald-600 text-white',
+  },
+  [TrucAction.TRUC]: {
+    label: '¡Truco!',
+    color: 'bg-yellow-500 hover:bg-yellow-600 text-yellow-900',
+  },
+  [TrucAction.RETRUC]: {
+    label: '¡Retruco!',
+    color: 'bg-orange-500 hover:bg-orange-600 text-orange-900',
+  },
+  [TrucAction.VALE_QUATRE]: {
+    label: '¡Vale Quatre!',
+    color: 'bg-red-600 hover:bg-red-700 text-white',
+  },
+  [TrucAction.JUEGO_FUERA]: {
+    label: '¡Joc Fora!',
+    color: 'bg-fuchsia-700 hover:bg-fuchsia-800 text-white',
+  },
+  [TrucAction.ENVIDO]: {
+    label: '¡Envido!',
+    color: 'bg-blue-500 hover:bg-blue-600 text-white',
+  },
+  [TrucAction.TORNA_CHO]: {
+    label: '¡Torna-cho!',
+    color: 'bg-indigo-500 hover:bg-indigo-600 text-white',
+  },
+  [TrucAction.QUIERO]: {
+    label: '¡Quiero!',
+    color: 'bg-emerald-500 hover:bg-emerald-600 text-white',
+  },
+  [TrucAction.NO_QUIERO]: {
+    label: 'No quiero',
+    color: 'bg-gray-500 hover:bg-gray-600 text-white',
+  },
+  [TrucAction.JUGAR_CARTA]: { label: 'Jugar Carta', color: '' },
+  [TrucAction.ELEGIR_CARTA_DESEMPATE]: { label: 'Elegir carta', color: '' },
 };
 
-export const ActionButtons: React.FC<ActionButtonsProps> = ({ allowedActions, onAction }) => {
-  const buttonsToRender = allowedActions.filter(a => a !== TrucAction.JUGAR_CARTA);
+export const ActionButtons: React.FC<ActionButtonsProps> = ({
+  allowedActions,
+  onAction,
+}) => {
+  const buttonsToRender = allowedActions.filter(
+    (a) =>
+      a !== TrucAction.JUGAR_CARTA && a !== TrucAction.ELEGIR_CARTA_DESEMPATE,
+  );
 
   if (buttonsToRender.length === 0) return null;
 
@@ -40,7 +76,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({ allowedActions, on
             className={clsx(
               'px-6 py-3 rounded-full font-bold text-lg border-2 border-transparent transition-all shadow-lg',
               'hover:scale-105 active:scale-95',
-              config.color
+              config.color,
             )}
           >
             {config.label}
