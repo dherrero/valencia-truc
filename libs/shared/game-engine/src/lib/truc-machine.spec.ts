@@ -1,6 +1,10 @@
 import { createActor } from 'xstate';
 import { TrucAction } from '@valencia-truc/shared-interfaces';
-import { getAllowedActions, trucMachine } from './truc-machine.js';
+import {
+  getActiveBetState,
+  getAllowedActions,
+  trucMachine,
+} from './truc-machine.js';
 
 describe('trucMachine', () => {
   const jugadores = ['p1', 'p2', 'p3', 'p4'];
@@ -74,6 +78,74 @@ describe('trucMachine', () => {
         TrucAction.NO_QUIERO,
         TrucAction.TORNA_CHO,
       ]),
+    );
+  });
+
+  it('acumula un historial visible de acciones relevantes', () => {
+    const actor = createActor(trucMachine);
+    actor.start();
+    actor.send({ type: 'REPARTIR', jugadores });
+    actor.send({ type: 'CANTAR_TRUC', jugadorId: 'p1' });
+
+    expect((actor.getSnapshot().context as any).historialAcciones).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'REPARTIR' }),
+        expect.objectContaining({ type: 'TRUC', jugadorId: 'p1' }),
+      ]),
+    );
+  });
+
+  it('expone la apuesta activa del truc mientras espera respuesta', () => {
+    const actor = createActor(trucMachine);
+    actor.start();
+    actor.send({ type: 'REPARTIR', jugadores });
+    actor.send({ type: 'CANTAR_TRUC', jugadorId: 'p1' });
+
+    expect(getActiveBetState(actor.getSnapshot())).toEqual(
+      expect.objectContaining({
+        family: 'truc',
+        label: 'Truc',
+        points: 2,
+        waitingResponse: true,
+      }),
+    );
+  });
+
+  it('no suma el envido al marcador hasta cerrar la ronda', () => {
+    const actor = createActor(trucMachine);
+    actor.start();
+    actor.send({ type: 'REPARTIR', jugadores });
+    actor.send({ type: 'CANTAR_ENVIDO', jugadorId: 'p1' });
+    actor.send({ type: 'QUIERO', jugadorId: 'p2' });
+
+    expect(actor.getSnapshot().context.puntuacionCama).toEqual({
+      equipo1: 0,
+      equipo2: 0,
+    });
+  });
+
+  it('genera un resumen de ronda al terminar y ya entonces actualiza el marcador', () => {
+    const actor = createActor(trucMachine);
+    actor.start();
+    actor.send({ type: 'REPARTIR', jugadores });
+    actor.send({ type: 'CANTAR_TRUC', jugadorId: 'p1' });
+    actor.send({ type: 'NO_QUIERO', jugadorId: 'p2' });
+
+    const snapshot = actor.getSnapshot();
+
+    expect(snapshot.context.puntuacionCama).toEqual({ equipo1: 1, equipo2: 0 });
+    expect(snapshot.context.resumenRonda).toEqual(
+      expect.objectContaining({
+        awarded: { equipo1: 1, equipo2: 0 },
+        scoreAfter: { equipo1: 1, equipo2: 0 },
+        reasons: [
+          expect.objectContaining({
+            team: 'equipo1',
+            points: 1,
+            reason: 'truc no volgut',
+          }),
+        ],
+      }),
     );
   });
 

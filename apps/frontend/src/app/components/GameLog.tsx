@@ -1,69 +1,94 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { TrucAction } from '@valencia-truc/shared-interfaces';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from 'react';
+import { ActionLogEntry } from '@valencia-truc/shared-interfaces';
 
 interface GameLogProps {
-  lastAction?: { type: TrucAction, jugadorId: string };
+  entries: ActionLogEntry[];
+  playerId: string;
 }
 
-// Translations to typical Valencian phrases
-const valencianPhrases: Record<string, string[]> = {
-  [TrucAction.TRUC]: [
-    '¡El rival et busca les puces, ha cantat TRUC!',
-    '¡Pareix que té joc, canta TRUC!',
-  ],
-  [TrucAction.RETRUC]: [
-    '¡Açò s\'anima! ¡RETRUC a la vista!',
-    '¡Diu que RETRUC! ¿Què fas, vols o no vols?',
-  ],
-  [TrucAction.VALE_QUATRE]: [
-    '¡VALE QUATRE! ¡Mare meua, quina tensió!',
-  ],
-  [TrucAction.ENVIDO]: [
-    '¡Ha llançat l\'ENVIDO! A vore qui té més pedra.',
-    '¡ENVIDO cantat! ¿Tens bones cartes per a l\'envit?',
-  ],
-  [TrucAction.QUIERO]: [
-    '¡Ha dit que VOL! Anem a vore eixes cartes.',
-    '¡Valents al front! Ha acceptat (QUIERO).'
-  ],
-  [TrucAction.NO_QUIERO]: [
-    '¡S\'ha acovardit! NO VOL.',
-    '¡Fuig d\'estudi! Ha dit que NO QUIERO.'
-  ],
-  [TrucAction.JUGAR_CARTA]: [
-    'Tira carta a la taula.',
-  ]
-};
+function getActorLabel(
+  entryPlayerId: string | undefined,
+  currentPlayerId: string,
+) {
+  if (!entryPlayerId) return 'La taula';
+  if (entryPlayerId === currentPlayerId) return 'Tu';
+  if (entryPlayerId.startsWith('bot-')) return 'Bot';
+  return 'Jugador';
+}
 
-export const GameLog: React.FC<GameLogProps> = ({ lastAction }) => {
-  const [logs, setLogs] = useState<{ id: number, text: string }[]>([]);
-  const logCounter = useRef(0);
+function formatEntry(entry: ActionLogEntry, currentPlayerId: string) {
+  const actor = getActorLabel(entry.jugadorId, currentPlayerId);
 
-  useEffect(() => {
-    if (lastAction && lastAction.type !== TrucAction.JUGAR_CARTA) {
-      const phrases = valencianPhrases[lastAction.type];
-      const text = phrases ? phrases[Math.floor(Math.random() * phrases.length)] : `Acción: ${lastAction.type}`;
-      
-      setLogs(prev => [...prev.slice(-4), { id: logCounter.current++, text }]);
-    }
-  }, [lastAction]);
+  switch (entry.type) {
+    case 'REPARTIR':
+      return 'Nova ronda repartida';
+    case 'TRUC':
+      return `${actor} canta truc`;
+    case 'RETRUC':
+      return `${actor} canta retruc`;
+    case 'VALE_QUATRE':
+      return `${actor} canta vale quatre`;
+    case 'JUEGO_FUERA':
+      return `${actor} canta joc fora`;
+    case 'ENVIDO':
+      return `${actor} canta envido`;
+    case 'TORNA_CHO':
+      return `${actor} diu torna-cho`;
+    case 'QUIERO':
+      return `${actor} diu quiero`;
+    case 'NO_QUIERO':
+      return `${actor} no vol`;
+    case 'JUGAR_CARTA':
+      return `${actor} tira carta`;
+    case 'ELEGIR_CARTA_DESEMPATE':
+      return `${actor} tria descoberta`;
+    default:
+      return entry.type;
+  }
+}
+
+export const GameLog: React.FC<GameLogProps> = ({ entries, playerId }) => {
+  const [isCollapsed, setIsCollapsed] = useState(true);
+  const visibleEntries = entries.slice(-6).reverse();
+
+  if (visibleEntries.length === 0) return null;
 
   return (
-    <div className="absolute top-4 right-4 w-64 flex flex-col items-end gap-2 pointer-events-none z-50">
-      <AnimatePresence>
-        {logs.map((log) => (
-          <motion.div
-            key={log.id}
-            initial={{ opacity: 0, x: 50, scale: 0.8 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
-            className="bg-yellow-100 text-yellow-900 px-4 py-2 rounded-lg shadow-lg border-2 border-yellow-400 font-bold text-sm text-right"
-          >
-            {log.text}
-          </motion.div>
-        ))}
-      </AnimatePresence>
+    <div className="fixed bottom-4 right-4 z-40 w-72 rounded-2xl border border-emerald-700/60 bg-emerald-950/90 p-3 shadow-2xl backdrop-blur-sm">
+      <button
+        type="button"
+        onClick={() => setIsCollapsed((current) => !current)}
+        className="flex w-full items-center justify-between rounded-xl px-1 py-1 text-left"
+      >
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">
+            Historial
+          </p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-500">
+            Ultimes 6
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full bg-emerald-900 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-300">
+            {visibleEntries.length}
+          </span>
+          <span className="text-lg font-black text-emerald-200">
+            {isCollapsed ? '+' : '-'}
+          </span>
+        </div>
+      </button>
+      {!isCollapsed && (
+        <div className="mt-3 flex flex-col gap-2">
+          {visibleEntries.map((entry) => (
+            <div
+              key={entry.id}
+              className="rounded-xl border border-emerald-800/80 bg-black/20 px-3 py-2 text-sm font-medium text-emerald-50"
+            >
+              {formatEntry(entry, playerId)}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

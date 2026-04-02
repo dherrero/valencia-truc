@@ -1,5 +1,13 @@
-import { TrucAction, GameStateUpdate, PlayerSeat, Card } from '@valencia-truc/shared-interfaces';
-import { TrucContext } from '@valencia-truc/shared-game-engine';
+import {
+  TrucAction,
+  GameStateUpdate,
+  PlayerSeat,
+  Card,
+} from '@valencia-truc/shared-interfaces';
+import {
+  getActiveBetState,
+  TrucContext,
+} from '@valencia-truc/shared-game-engine';
 
 /**
  * Sanitizes the XState context for a specific player.
@@ -17,7 +25,7 @@ export function sanitizeGameState(
   playerId: string,
   allowedActions: TrucAction[],
   board: Card[],
-  allPlayerIds: string[] = []
+  allPlayerIds: string[] = [],
 ): GameStateUpdate {
   const myCards = context.cartasJugadores?.[playerId] ?? [];
 
@@ -44,11 +52,16 @@ export function sanitizeGameState(
   // Pad to 3 seats if fewer than 4 players
   while (otherPlayers.length < 3) {
     const pos = positions[otherPlayers.length];
-    otherPlayers.push({ playerId: '', cardCount: 0, isPartner: otherPlayers.length === 1, position: pos });
+    otherPlayers.push({
+      playerId: '',
+      cardCount: 0,
+      isPartner: otherPlayers.length === 1,
+      position: pos,
+    });
   }
 
   // First rival for backwards compat
-  const firstRival = otherPlayers.find(p => !p.isPartner);
+  const firstRival = otherPlayers.find((p) => !p.isPartner);
   const cartasRival = firstRival?.cardCount ?? 0;
 
   return {
@@ -56,6 +69,9 @@ export function sanitizeGameState(
     hand: myCards,
     score: context.puntuacionCama,
     allowedActions,
+    actionLog: context.historialAcciones,
+    activeBet: getActiveBetState({ context } as never),
+    roundSummary: context.resumenRonda ?? undefined,
     cartasRival,
     otherPlayers,
     turnoActual: context.turnoActual,

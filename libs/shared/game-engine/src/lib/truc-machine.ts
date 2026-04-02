@@ -1,5 +1,13 @@
 import { createMachine, assign, SnapshotFrom } from 'xstate';
-import { Card, TrucAction } from '@valencia-truc/shared-interfaces';
+import {
+  ActionLogEntry,
+  ActiveBetState,
+  Card,
+  RoundAwardReason,
+  RoundSummary,
+  TeamPoints,
+  TrucAction,
+} from '@valencia-truc/shared-interfaces';
 import {
   VALENCIA_DECK,
   calculateEnvido,
@@ -17,7 +25,7 @@ type CartaDesempate = { jugadorId: string; cartaDescubierta: Card };
 type MachineSnapshot = SnapshotFrom<typeof trucMachine>;
 
 export interface TrucContext {
-  puntuacionCama: { equipo1: number; equipo2: number };
+  puntuacionCama: TeamPoints;
   cartasJugadores: Record<string, Card[]>;
   bazasGanadas: { equipo1: number; equipo2: number };
   estadoEnvido: EstadoEnvido;
@@ -36,6 +44,13 @@ export interface TrucContext {
   respuestaTrucPendiente: boolean;
   rondaTerminadaPorRechazo: boolean;
   desempateCartasSeleccionadas: CartaDesempate[];
+  puntosPendientesEnvido: TeamPoints;
+  puntosPendientesTruc: TeamPoints;
+  motivosPendientesEnvido: RoundAwardReason[];
+  motivosPendientesTruc: RoundAwardReason[];
+  resumenRonda: RoundSummary | null;
+  historialAcciones: ActionLogEntry[];
+  siguienteAccionId: number;
 }
 
 export type TrucEvent =
@@ -156,6 +171,132 @@ function addPoints(
     equipo1: score.equipo1 + (equipo === 'equipo1' ? puntos : 0),
     equipo2: score.equipo2 + (equipo === 'equipo2' ? puntos : 0),
   };
+}
+
+function addTeamPoints(left: TeamPoints, right: TeamPoints): TeamPoints {
+  return {
+    equipo1: left.equipo1 + right.equipo1,
+    equipo2: left.equipo2 + right.equipo2,
+  };
+}
+
+function emptyTeamPoints(): TeamPoints {
+  return { equipo1: 0, equipo2: 0 };
+}
+
+function appendAwardReason(
+  reasons: RoundAwardReason[],
+  team: Team,
+  points: number,
+  reason: string,
+): RoundAwardReason[] {
+  return [...reasons, { team, points, reason }];
+}
+
+function getEnvidoReason(estado: EstadoEnvido, accepted: boolean) {
+  if (estado === 'torna_cho') {
+    return accepted ? 'torna-cho volgut' : 'torna-cho no volgut';
+  }
+
+  return accepted ? 'envido volgut' : 'envido no volgut';
+}
+
+function getTrucReason(estado: EstadoTruc, accepted: boolean) {
+  switch (estado) {
+    case 'retruc':
+      return accepted ? 'retruc guanyat' : 'retruc no volgut';
+    case 'vale_quatre':
+      return accepted ? 'vale quatre guanyat' : 'vale quatre no volgut';
+    case 'juego_fuera':
+      return accepted ? 'joc fora guanyat' : 'joc fora no volgut';
+    case 'truc':
+    case 'ninguno':
+    default:
+      return accepted ? 'truc guanyat' : 'truc no volgut';
+  }
+}
+
+function appendActionLog(
+  context: TrucContext,
+  entry: Omit<ActionLogEntry, 'id'>,
+) {
+  return {
+    historialAcciones: [
+      ...context.historialAcciones,
+      { id: context.siguienteAccionId, ...entry },
+    ].slice(-8),
+    siguienteAccionId: context.siguienteAccionId + 1,
+  };
+}
+
+function getTrucDisplayPoints(estado: EstadoTruc) {
+  switch (estado) {
+    case 'truc':
+      return 2;
+    case 'retruc':
+      return 3;
+    case 'vale_quatre':
+      return 4;
+    case 'juego_fuera':
+      return 24;
+    case 'ninguno':
+    default:
+      return 0;
+  }
+}
+
+function getTrucLabel(estado: EstadoTruc) {
+  switch (estado) {
+    case 'truc':
+      return 'Truc';
+    case 'retruc':
+      return 'Retruc';
+    case 'vale_quatre':
+      return 'Vale quatre';
+    case 'juego_fuera':
+      return 'Joc fora';
+    case 'ninguno':
+    default:
+      return '';
+  }
+}
+
+function getEnvidoLabel(estado: EstadoEnvido) {
+  switch (estado) {
+    case 'torna_cho':
+      return 'Torna-cho';
+    case 'envido':
+      return 'Envido';
+    case 'ninguno':
+    default:
+      return '';
+  }
+}
+
+export function getActiveBetState(
+  snapshot: MachineSnapshot,
+): ActiveBetState | undefined {
+  const { context } = snapshot;
+
+  if (context.estadoEnvido !== 'ninguno') {
+    return {
+      family: 'envido',
+      label: getEnvidoLabel(context.estadoEnvido),
+      points: context.puntosEnvidoActual,
+      waitingResponse: context.respuestaEnvidoPendiente,
+    };
+  }
+
+  if (context.estadoApuestaTruc !== 'ninguno') {
+    return {
+      family: 'truc',
+      label: getTrucLabel(context.estadoApuestaTruc),
+      points: getTrucDisplayPoints(context.estadoApuestaTruc),
+      waitingResponse: context.respuestaTrucPendiente,
+    };
+  }
+
+  return undefined;
 }
 
 function playerCanRespondToTeamBet(
@@ -308,6 +449,13 @@ export const trucMachine = createMachine(
       respuestaTrucPendiente: false,
       rondaTerminadaPorRechazo: false,
       desempateCartasSeleccionadas: [],
+      puntosPendientesEnvido: { equipo1: 0, equipo2: 0 },
+      puntosPendientesTruc: { equipo1: 0, equipo2: 0 },
+      motivosPendientesEnvido: [],
+      motivosPendientesTruc: [],
+      resumenRonda: null,
+      historialAcciones: [],
+      siguienteAccionId: 1,
     },
     states: {
       ronda: {
@@ -457,7 +605,7 @@ export const trucMachine = createMachine(
             ],
           },
           finalizar_ronda: {
-            entry: 'limpiarEstadoPendienteRonda',
+            entry: ['cerrarResumenRonda', 'limpiarEstadoPendienteRonda'],
             always: [{ guard: 'equipoGana24', target: 'game_over' }],
             on: {
               REPARTIR: {
@@ -803,6 +951,10 @@ export const trucMachine = createMachine(
         if (event.type !== 'CANTAR_ENVIDO') return {};
 
         return {
+          ...appendActionLog(context, {
+            type: 'ENVIDO',
+            jugadorId: event.jugadorId,
+          }),
           estadoEnvido: 'envido' as const,
           puntosEnvidoActual: 2,
           equipoApostadorEnvido: getPlayerTeam(context, event.jugadorId),
@@ -813,20 +965,37 @@ export const trucMachine = createMachine(
         if (event.type !== 'TORNA_CHO') return {};
 
         return {
+          ...appendActionLog(context, {
+            type: 'TORNA_CHO',
+            jugadorId: event.jugadorId,
+          }),
           estadoEnvido: 'torna_cho' as const,
           puntosEnvidoActual: 4,
           equipoApostadorEnvido: getPlayerTeam(context, event.jugadorId),
           respuestaEnvidoPendiente: true,
         };
       }),
-      resolverEnvido: assign(({ context }) => {
+      resolverEnvido: assign(({ context, event }) => {
         const ganador = resolveEnvidoWinner(context);
+        const puntos = context.puntosEnvidoActual;
 
         return {
-          puntuacionCama: addPoints(
-            context.puntuacionCama,
+          ...appendActionLog(
+            context,
+            'jugadorId' in event
+              ? { type: 'QUIERO', jugadorId: event.jugadorId }
+              : { type: 'QUIERO' },
+          ),
+          puntosPendientesEnvido: addPoints(
+            context.puntosPendientesEnvido,
             ganador,
-            context.puntosEnvidoActual,
+            puntos,
+          ),
+          motivosPendientesEnvido: appendAwardReason(
+            context.motivosPendientesEnvido,
+            ganador,
+            puntos,
+            getEnvidoReason(context.estadoEnvido, true),
           ),
           estadoEnvido: 'ninguno' as const,
           puntosEnvidoActual: 0,
@@ -834,15 +1003,28 @@ export const trucMachine = createMachine(
           respuestaEnvidoPendiente: false,
         };
       }),
-      rechazarEnvido: assign(({ context }) => {
+      rechazarEnvido: assign(({ context, event }) => {
         const ganador = context.equipoApostadorEnvido;
         if (ganador == null) return {};
+        const puntos = getRejectionPointsForEnvido(context.estadoEnvido);
 
         return {
-          puntuacionCama: addPoints(
-            context.puntuacionCama,
+          ...appendActionLog(
+            context,
+            'jugadorId' in event
+              ? { type: 'NO_QUIERO', jugadorId: event.jugadorId }
+              : { type: 'NO_QUIERO' },
+          ),
+          puntosPendientesEnvido: addPoints(
+            context.puntosPendientesEnvido,
             ganador,
-            getRejectionPointsForEnvido(context.estadoEnvido),
+            puntos,
+          ),
+          motivosPendientesEnvido: appendAwardReason(
+            context.motivosPendientesEnvido,
+            ganador,
+            puntos,
+            getEnvidoReason(context.estadoEnvido, false),
           ),
           estadoEnvido: 'ninguno' as const,
           puntosEnvidoActual: 0,
@@ -854,63 +1036,116 @@ export const trucMachine = createMachine(
         if (event.type !== 'CANTAR_TRUC') return {};
 
         return {
+          ...appendActionLog(context, {
+            type: 'TRUC',
+            jugadorId: event.jugadorId,
+          }),
           estadoApuestaTruc: 'truc' as const,
           equipoApostadorTruc: getPlayerTeam(context, event.jugadorId),
           respuestaTrucPendiente: true,
         };
       }),
-      aceptarTruc: assign({
+      aceptarTruc: assign(({ context, event }) => ({
+        ...appendActionLog(
+          context,
+          'jugadorId' in event
+            ? { type: 'QUIERO', jugadorId: event.jugadorId }
+            : { type: 'QUIERO' },
+        ),
         puntosTrucActual: 2,
         respuestaTrucPendiente: false,
-      }),
+      })),
       registrarCantadaRetruc: assign(({ context, event }) => {
         if (event.type !== 'RETRUC') return {};
 
         return {
+          ...appendActionLog(context, {
+            type: 'RETRUC',
+            jugadorId: event.jugadorId,
+          }),
           estadoApuestaTruc: 'retruc' as const,
           equipoApostadorTruc: getPlayerTeam(context, event.jugadorId),
           respuestaTrucPendiente: true,
         };
       }),
-      aceptarRetruc: assign({
+      aceptarRetruc: assign(({ context, event }) => ({
+        ...appendActionLog(
+          context,
+          'jugadorId' in event
+            ? { type: 'QUIERO', jugadorId: event.jugadorId }
+            : { type: 'QUIERO' },
+        ),
         puntosTrucActual: 3,
         respuestaTrucPendiente: false,
-      }),
+      })),
       registrarCantadaValeQuatre: assign(({ context, event }) => {
         if (event.type !== 'VALE_QUATRE') return {};
 
         return {
+          ...appendActionLog(context, {
+            type: 'VALE_QUATRE',
+            jugadorId: event.jugadorId,
+          }),
           estadoApuestaTruc: 'vale_quatre' as const,
           equipoApostadorTruc: getPlayerTeam(context, event.jugadorId),
           respuestaTrucPendiente: true,
         };
       }),
-      aceptarValeQuatre: assign({
+      aceptarValeQuatre: assign(({ context, event }) => ({
+        ...appendActionLog(
+          context,
+          'jugadorId' in event
+            ? { type: 'QUIERO', jugadorId: event.jugadorId }
+            : { type: 'QUIERO' },
+        ),
         puntosTrucActual: 4,
         respuestaTrucPendiente: false,
-      }),
+      })),
       registrarCantadaJuegoFuera: assign(({ context, event }) => {
         if (event.type !== 'JUEGO_FUERA') return {};
 
         return {
+          ...appendActionLog(context, {
+            type: 'JUEGO_FUERA',
+            jugadorId: event.jugadorId,
+          }),
           estadoApuestaTruc: 'juego_fuera' as const,
           equipoApostadorTruc: getPlayerTeam(context, event.jugadorId),
           respuestaTrucPendiente: true,
         };
       }),
-      aceptarJuegoFuera: assign({
+      aceptarJuegoFuera: assign(({ context, event }) => ({
+        ...appendActionLog(
+          context,
+          'jugadorId' in event
+            ? { type: 'QUIERO', jugadorId: event.jugadorId }
+            : { type: 'QUIERO' },
+        ),
         puntosTrucActual: 24,
         respuestaTrucPendiente: false,
-      }),
-      rechazarTruc: assign(({ context }) => {
+      })),
+      rechazarTruc: assign(({ context, event }) => {
         const ganador = context.equipoApostadorTruc;
         if (ganador == null) return {};
+        const puntos = getRejectionPointsForTruc(context.estadoApuestaTruc);
 
         return {
-          puntuacionCama: addPoints(
-            context.puntuacionCama,
+          ...appendActionLog(
+            context,
+            'jugadorId' in event
+              ? { type: 'NO_QUIERO', jugadorId: event.jugadorId }
+              : { type: 'NO_QUIERO' },
+          ),
+          puntosPendientesTruc: addPoints(
+            context.puntosPendientesTruc,
             ganador,
-            getRejectionPointsForTruc(context.estadoApuestaTruc),
+            puntos,
+          ),
+          motivosPendientesTruc: appendAwardReason(
+            context.motivosPendientesTruc,
+            ganador,
+            puntos,
+            getTrucReason(context.estadoApuestaTruc, false),
           ),
           respuestaTrucPendiente: false,
           rondaTerminadaPorRechazo: true,
@@ -919,23 +1154,72 @@ export const trucMachine = createMachine(
       abortarRondaPorRechazo: () => {
         console.log('Ronda finalizada porque se rechazó una apuesta de Truc.');
       },
+      cerrarResumenRonda: assign(({ context }) => {
+        const scoreWithEnvido = addTeamPoints(
+          context.puntuacionCama,
+          context.puntosPendientesEnvido,
+        );
+        const envidoCierraPartida =
+          scoreWithEnvido.equipo1 >= 24 || scoreWithEnvido.equipo2 >= 24;
+        const awarded = envidoCierraPartida
+          ? context.puntosPendientesEnvido
+          : addTeamPoints(
+              context.puntosPendientesEnvido,
+              context.puntosPendientesTruc,
+            );
+        const scoreAfter = addTeamPoints(context.puntuacionCama, awarded);
+
+        return {
+          puntuacionCama: scoreAfter,
+          resumenRonda: {
+            envido: context.puntosPendientesEnvido,
+            truc: envidoCierraPartida
+              ? emptyTeamPoints()
+              : context.puntosPendientesTruc,
+            awarded,
+            scoreAfter,
+            reasons: envidoCierraPartida
+              ? context.motivosPendientesEnvido
+              : [
+                  ...context.motivosPendientesEnvido,
+                  ...context.motivosPendientesTruc,
+                ],
+          },
+          puntosPendientesEnvido: emptyTeamPoints(),
+          puntosPendientesTruc: emptyTeamPoints(),
+          motivosPendientesEnvido: [],
+          motivosPendientesTruc: [],
+        };
+      }),
       limpiarEstadoPendienteRonda: assign({
         rondaTerminadaPorRechazo: false,
         respuestaTrucPendiente: false,
         respuestaEnvidoPendiente: false,
       }),
       anotarRondaEq1: assign(({ context }) => ({
-        puntuacionCama: addPoints(
-          context.puntuacionCama,
+        puntosPendientesTruc: addPoints(
+          context.puntosPendientesTruc,
           'equipo1',
           context.puntosTrucActual,
         ),
+        motivosPendientesTruc: appendAwardReason(
+          context.motivosPendientesTruc,
+          'equipo1',
+          context.puntosTrucActual,
+          getTrucReason(context.estadoApuestaTruc, true),
+        ),
       })),
       anotarRondaEq2: assign(({ context }) => ({
-        puntuacionCama: addPoints(
-          context.puntuacionCama,
+        puntosPendientesTruc: addPoints(
+          context.puntosPendientesTruc,
           'equipo2',
           context.puntosTrucActual,
+        ),
+        motivosPendientesTruc: appendAwardReason(
+          context.motivosPendientesTruc,
+          'equipo2',
+          context.puntosTrucActual,
+          getTrucReason(context.estadoApuestaTruc, true),
         ),
       })),
       anotarRondaManoOriginal: assign(({ context }) => {
@@ -943,10 +1227,16 @@ export const trucMachine = createMachine(
           getPlayerTeam(context, context.manoOriginal) ?? 'equipo1';
 
         return {
-          puntuacionCama: addPoints(
-            context.puntuacionCama,
+          puntosPendientesTruc: addPoints(
+            context.puntosPendientesTruc,
             ganador,
             context.puntosTrucActual,
+          ),
+          motivosPendientesTruc: appendAwardReason(
+            context.motivosPendientesTruc,
+            ganador,
+            context.puntosTrucActual,
+            getTrucReason(context.estadoApuestaTruc, true),
           ),
         };
       }),
@@ -978,6 +1268,7 @@ export const trucMachine = createMachine(
         });
 
         return {
+          ...appendActionLog(context, { type: 'REPARTIR' }),
           manoActual: 1,
           bazasGanadas: { equipo1: 0, equipo2: 0 },
           historialBazas: [],
@@ -991,6 +1282,11 @@ export const trucMachine = createMachine(
           respuestaTrucPendiente: false,
           rondaTerminadaPorRechazo: false,
           desempateCartasSeleccionadas: [],
+          puntosPendientesEnvido: emptyTeamPoints(),
+          puntosPendientesTruc: emptyTeamPoints(),
+          motivosPendientesEnvido: [],
+          motivosPendientesTruc: [],
+          resumenRonda: null,
           cartasJugadores,
           jugadoresOrden,
           manoOriginal,
@@ -1015,6 +1311,10 @@ export const trucMachine = createMachine(
         const nextIndex = (currentIndex + 1) % context.jugadoresOrden.length;
 
         return {
+          ...appendActionLog(context, {
+            type: 'JUGAR_CARTA',
+            jugadorId: event.jugadorId,
+          }),
           cartasJugadores: {
             ...context.cartasJugadores,
             [event.jugadorId]: nextHand,
@@ -1027,6 +1327,10 @@ export const trucMachine = createMachine(
         if (event.type !== 'ELEGIR_CARTA_DESEMPATE') return {};
 
         return {
+          ...appendActionLog(context, {
+            type: 'ELEGIR_CARTA_DESEMPATE',
+            jugadorId: event.jugadorId,
+          }),
           desempateCartasSeleccionadas: [
             ...context.desempateCartasSeleccionadas,
             {

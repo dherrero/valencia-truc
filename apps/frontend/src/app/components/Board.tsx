@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card as CardComponent } from './Card';
 import { CardBack } from './CardBack';
+import { ActiveBetBanner } from './ActiveBetBanner';
 import { ActionButtons } from './ActionButtons';
 import { ScoreBoard } from './ScoreBoard';
 import { GameLog } from './GameLog';
@@ -69,20 +70,24 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
   } = useTrucSocket(roomUid, playerId);
 
   const hasHand = (gameState?.hand?.length ?? 0) > 0;
-  const isLobby = gameState != null && !hasHand;
+  const hasRoundSummary = gameState?.roundSummary != null;
+  const isLobby = gameState != null && !hasHand && !hasRoundSummary;
   const canDeal =
-    isLobby && gameState.allowedActions.includes(TrucAction.REPARTIR);
+    gameState?.allowedActions.includes(TrucAction.REPARTIR) ?? false;
   const canPlayCard =
     gameState?.allowedActions.includes(TrucAction.JUGAR_CARTA) ?? false;
   const canChooseTieBreaker =
     gameState?.allowedActions.includes(TrucAction.ELEGIR_CARTA_DESEMPATE) ??
     false;
+  const roundSummary = gameState?.roundSummary;
 
   const topSeat = gameState?.otherPlayers?.find((p) => p.position === 'top');
   const rightSeat = gameState?.otherPlayers?.find(
     (p) => p.position === 'right',
   );
   const leftSeat = gameState?.otherPlayers?.find((p) => p.position === 'left');
+  const getTeamLabel = (team: 'equipo1' | 'equipo2') =>
+    team === 'equipo1' ? 'Nosaltres' : 'Rivals';
 
   // ── Connection screen ───────────────────────────────────────────────────────
   if (connectionStatus !== 'connected') {
@@ -236,10 +241,79 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
         <ScoreBoard score={gameState?.score || { equipo1: 0, equipo2: 0 }} />
       </div>
 
-      {/* ── GAMELOG ── */}
-      <div className="absolute top-2 right-2 z-30">
-        <GameLog lastAction={undefined} />
-      </div>
+      <ActiveBetBanner activeBet={gameState?.activeBet} />
+
+      <GameLog entries={gameState?.actionLog ?? []} playerId={playerId} />
+
+      {roundSummary && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="w-full max-w-md rounded-3xl border border-emerald-700/70 bg-emerald-950/95 p-6 text-white shadow-2xl backdrop-blur-sm"
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-emerald-300">
+              Final de ronda
+            </p>
+            <h2 className="mt-2 text-3xl font-black">Resum de pedres</h2>
+            <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
+              <div className="rounded-2xl border border-emerald-800 bg-black/20 p-4">
+                <p className="text-emerald-300 uppercase tracking-wider text-xs">
+                  Nosaltres
+                </p>
+                <p className="mt-2 text-3xl font-black text-white">
+                  +{roundSummary.awarded.equipo1}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-emerald-800 bg-black/20 p-4">
+                <p className="text-red-300 uppercase tracking-wider text-xs">
+                  Rivals
+                </p>
+                <p className="mt-2 text-3xl font-black text-white">
+                  +{roundSummary.awarded.equipo2}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 rounded-2xl border border-emerald-800 bg-black/20 p-4 text-sm text-emerald-100">
+              <p>
+                Envido: {roundSummary.envido.equipo1} -{' '}
+                {roundSummary.envido.equipo2}
+              </p>
+              <p>
+                Truc: {roundSummary.truc.equipo1} - {roundSummary.truc.equipo2}
+              </p>
+              {roundSummary.reasons.length > 0 && (
+                <div className="mt-3 border-t border-emerald-800 pt-3">
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">
+                    Per que
+                  </p>
+                  <div className="mt-2 space-y-1">
+                    {roundSummary.reasons.map((entry, index) => (
+                      <p key={`${entry.team}-${entry.reason}-${index}`}>
+                        {getTeamLabel(entry.team)} guanya {entry.points} pedra
+                        {entry.points === 1 ? '' : 's'} per {entry.reason}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <p className="mt-3 font-semibold text-emerald-300">
+                Marcador: {roundSummary.scoreAfter.equipo1} -{' '}
+                {roundSummary.scoreAfter.equipo2}
+              </p>
+            </div>
+            {canDeal && (
+              <button
+                type="button"
+                onClick={() => sendAction(TrucAction.REPARTIR)}
+                className="mt-5 w-full rounded-2xl bg-emerald-500 px-5 py-4 text-lg font-black text-white transition-colors hover:bg-emerald-400"
+              >
+                Seguent ronda
+              </button>
+            )}
+          </motion.div>
+        </div>
+      )}
 
       {/*
         ┌──────────────────────────────────────┐

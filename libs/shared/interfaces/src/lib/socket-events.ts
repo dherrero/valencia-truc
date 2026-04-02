@@ -1,5 +1,37 @@
 import { Card } from './shared-interfaces.js';
 
+export interface ActionLogEntry {
+  id: number;
+  type: string;
+  jugadorId?: string;
+}
+
+export interface ActiveBetState {
+  family: 'truc' | 'envido';
+  label: string;
+  points: number;
+  waitingResponse: boolean;
+}
+
+export interface TeamPoints {
+  equipo1: number;
+  equipo2: number;
+}
+
+export interface RoundAwardReason {
+  team: 'equipo1' | 'equipo2';
+  points: number;
+  reason: string;
+}
+
+export interface RoundSummary {
+  envido: TeamPoints;
+  truc: TeamPoints;
+  awarded: TeamPoints;
+  scoreAfter: TeamPoints;
+  reasons: RoundAwardReason[];
+}
+
 export enum TrucAction {
   REPARTIR = 'REPARTIR',
   TRUC = 'TRUC',
@@ -24,8 +56,11 @@ export interface PlayerSeat {
 export interface GameStateUpdate {
   board: Card[];
   hand: Card[];
-  score: { equipo1: number; equipo2: number };
+  score: TeamPoints;
   allowedActions: TrucAction[];
+  actionLog: ActionLogEntry[];
+  activeBet?: ActiveBetState;
+  roundSummary?: RoundSummary;
   cartasRival: number; // kept for backwards compat (first rival)
   otherPlayers: PlayerSeat[]; // all other 3 seats (right, top, left)
   turnoActual?: string;
