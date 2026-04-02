@@ -1,5 +1,5 @@
 import React from 'react';
-import { useI18n } from '../i18n/LanguageProvider';
+import { useI18n } from '../../i18n/LanguageProvider';
 
 interface ScoreBoardProps {
   score: { equipo1: number; equipo2: number };

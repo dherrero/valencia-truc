@@ -2,7 +2,7 @@ import React from 'react';
 import { TrucAction } from '@valencia-truc/shared-interfaces';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
-import { useI18n } from '../i18n/LanguageProvider';
+import { useI18n } from '../../i18n/LanguageProvider';
 
 interface ActionButtonsProps {
   allowedActions: TrucAction[];

@@ -1,6 +1,6 @@
 import React from 'react';
 import { ActiveBetState } from '@valencia-truc/shared-interfaces';
-import { useI18n } from '../i18n/LanguageProvider';
+import { useI18n } from '../../i18n/LanguageProvider';
 
 interface ActiveBetBannerProps {
   activeBet?: ActiveBetState;

@@ -10,7 +10,7 @@ export const translations: Record<Language, TranslationTree> = {
     },
     header: {
       language: 'Idioma actiu',
-      valencian: 'Valencia',
+      valencian: 'Valencià',
       spanish: 'Castella',
       rules: 'Regles',
       home: 'Inici',
@@ -39,7 +39,7 @@ export const translations: Record<Language, TranslationTree> = {
       joinRoomError: 'Error al unir-se a la sala',
     },
     rules: {
-      title: 'Regles del Truc Valencia',
+      title: 'Regles del Truc Valencià',
       intro:
         'Resum rapid de les regles principals per entendre el funcionament de la partida.',
       objectiveTitle: 'Objectiu',
@@ -94,6 +94,7 @@ export const translations: Record<Language, TranslationTree> = {
     },
     scoreboard: {
       title: 'Puntuacio actual',
+      bazas: 'Bazas',
       rival: 'Rivals',
       us: 'Nosaltres',
     },
@@ -245,6 +246,7 @@ export const translations: Record<Language, TranslationTree> = {
     },
     scoreboard: {
       title: 'Puntuacion actual',
+      bazas: 'Bazas',
       rival: 'Rivales',
       us: 'Nosotros',
     },

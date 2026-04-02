@@ -63,9 +63,11 @@ export interface GameStateUpdate {
   roundSummary?: RoundSummary;
   cartasRival: number; // kept for backwards compat (first rival)
   otherPlayers: PlayerSeat[]; // all other 3 seats (right, top, left)
+  myTeam: 'equipo1' | 'equipo2';
   turnoActual?: string;
   manoOriginal?: string;
   cartasEnMesa?: { jugadorId: string; carta: Card }[];
+  bazaResults?: Array<'equipo1' | 'equipo2' | 'empate'>;
 }
 
 export interface RoomSummary {

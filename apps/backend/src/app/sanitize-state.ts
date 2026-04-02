@@ -33,6 +33,7 @@ export function sanitizeGameState(
   // allPlayerIds order is: [creator, p1, p2, p3] (seat indices 0-3)
   const totalPlayers = allPlayerIds.length;
   const myIndex = allPlayerIds.indexOf(playerId);
+  const myTeam = myIndex % 2 === 0 ? 'equipo1' : 'equipo2';
 
   const positions: Array<'right' | 'top' | 'left'> = ['right', 'top', 'left'];
   const otherPlayers: PlayerSeat[] = [];
@@ -74,9 +75,11 @@ export function sanitizeGameState(
     roundSummary: context.resumenRonda ?? undefined,
     cartasRival,
     otherPlayers,
+    myTeam,
     turnoActual: context.turnoActual,
     manoOriginal: context.manoOriginal,
     // Eliminamos 'board' nativo y enviamos 'cartasEnMesa' (frontend usará cartasEnMesa o mapeará)
     cartasEnMesa: context.cartasEnMesa || [],
+    bazaResults: context.historialBazas,
   };
 }
