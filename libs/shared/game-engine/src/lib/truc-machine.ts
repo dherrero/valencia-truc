@@ -188,31 +188,31 @@ function appendAwardReason(
   reasons: RoundAwardReason[],
   team: Team,
   points: number,
-  reason: string,
+  reasonKey: string,
 ): RoundAwardReason[] {
-  return [...reasons, { team, points, reason }];
+  return [...reasons, { team, points, reasonKey }];
 }
 
 function getEnvidoReason(estado: EstadoEnvido, accepted: boolean) {
   if (estado === 'torna_cho') {
-    return accepted ? 'torna-cho volgut' : 'torna-cho no volgut';
+    return accepted ? 'torna-cho-accepted' : 'torna-cho-rejected';
   }
 
-  return accepted ? 'envido volgut' : 'envido no volgut';
+  return accepted ? 'envido-accepted' : 'envido-rejected';
 }
 
 function getTrucReason(estado: EstadoTruc, accepted: boolean) {
   switch (estado) {
     case 'retruc':
-      return accepted ? 'retruc guanyat' : 'retruc no volgut';
+      return accepted ? 'retruc-won' : 'retruc-rejected';
     case 'vale_quatre':
-      return accepted ? 'vale quatre guanyat' : 'vale quatre no volgut';
+      return accepted ? 'vale-quatre-won' : 'vale-quatre-rejected';
     case 'juego_fuera':
-      return accepted ? 'joc fora guanyat' : 'joc fora no volgut';
+      return accepted ? 'juego-fuera-won' : 'juego-fuera-rejected';
     case 'truc':
     case 'ninguno':
     default:
-      return accepted ? 'truc guanyat' : 'truc no volgut';
+      return accepted ? 'truc-won' : 'truc-rejected';
   }
 }
 

@@ -21,7 +21,7 @@ export interface TeamPoints {
 export interface RoundAwardReason {
   team: 'equipo1' | 'equipo2';
   points: number;
-  reason: string;
+  reasonKey: string;
 }
 
 export interface RoundSummary {

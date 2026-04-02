@@ -1,25 +1,41 @@
 import { useEffect, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { ClientToServerEvents, ServerToClientEvents, GameStateUpdate, TrucAction } from '@valencia-truc/shared-interfaces';
+import {
+  ClientToServerEvents,
+  ServerToClientEvents,
+  GameStateUpdate,
+  TrucAction,
+} from '@valencia-truc/shared-interfaces';
+import { useI18n } from '../i18n/LanguageProvider';
 
 const SOCKET_URL = 'http://localhost:3333';
 
 export function useTrucSocket(roomUid: string, playerId: string) {
-  const [socket, setSocket] = useState<Socket<ServerToClientEvents, ClientToServerEvents> | null>(null);
+  const { t } = useI18n();
+  const [socket, setSocket] = useState<Socket<
+    ServerToClientEvents,
+    ClientToServerEvents
+  > | null>(null);
   const [gameState, setGameState] = useState<GameStateUpdate | null>(null);
-  const [gameOver, setGameOver] = useState<{ ganador: 'equipo1' | 'equipo2'; score: { equipo1: number; equipo2: number } } | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error' | 'disconnected'>('connecting');
+  const [gameOver, setGameOver] = useState<{
+    ganador: 'equipo1' | 'equipo2';
+    score: { equipo1: number; equipo2: number };
+  } | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<
+    'connecting' | 'connected' | 'error' | 'disconnected'
+  >('connecting');
   const [roomError, setRoomError] = useState<string | null>(null);
 
   useEffect(() => {
-    const newSocket: Socket<ServerToClientEvents, ClientToServerEvents> = io(SOCKET_URL);
+    const newSocket: Socket<ServerToClientEvents, ClientToServerEvents> =
+      io(SOCKET_URL);
 
     newSocket.on('connect', () => {
       setConnectionStatus('connected');
       // Join the specific room by UID
       newSocket.emit('room:join', { uid: roomUid, playerId }, (res) => {
         if (res.status === 'error') {
-          setRoomError(res.message || 'No s\'ha pogut connectar a la partida.');
+          setRoomError(res.message || t('socket.roomConnectError'));
         }
       });
     });
@@ -40,16 +56,26 @@ export function useTrucSocket(roomUid: string, playerId: string) {
     newSocket.on('disconnect', () => setConnectionStatus('disconnected'));
     newSocket.on('connect_error', () => setConnectionStatus('error'));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (newSocket as any).on('game:over', (data: { ganador: 'equipo1' | 'equipo2'; score: { equipo1: number; equipo2: number } }) => {
-      setGameOver(data);
-    });
+    (newSocket as any).on(
+      'game:over',
+      (data: {
+        ganador: 'equipo1' | 'equipo2';
+        score: { equipo1: number; equipo2: number };
+      }) => {
+        setGameOver(data);
+      },
+    );
 
     setSocket(newSocket);
 
     // Hydrate from localStorage while socket connects
     const cached = localStorage.getItem('truc_gamestate');
     if (cached) {
-      try { setGameState(JSON.parse(cached)); } catch { /* ignore */ }
+      try {
+        setGameState(JSON.parse(cached));
+      } catch {
+        /* ignore */
+      }
     }
 
     return () => {
@@ -63,15 +89,25 @@ export function useTrucSocket(roomUid: string, playerId: string) {
     };
   }, [roomUid, playerId]);
 
-  const sendAction = useCallback((action: TrucAction | string, payload?: unknown) => {
-    if (socket && connectionStatus === 'connected') {
-      socket.emit('game:action', { type: action, payload }, (res) => {
-        if (res.status === 'error') {
-          setRoomError(res.message || 'Error a l\'enviar l\'acció.');
-        }
-      });
-    }
-  }, [socket, connectionStatus]);
+  const sendAction = useCallback(
+    (action: TrucAction | string, payload?: unknown) => {
+      if (socket && connectionStatus === 'connected') {
+        socket.emit('game:action', { type: action, payload }, (res) => {
+          if (res.status === 'error') {
+            setRoomError(res.message || t('socket.actionError'));
+          }
+        });
+      }
+    },
+    [socket, connectionStatus, t],
+  );
 
-  return { gameState, gameOver, sendAction, connectionStatus, roomError, clearError: () => setRoomError(null) };
+  return {
+    gameState,
+    gameOver,
+    sendAction,
+    connectionStatus,
+    roomError,
+    clearError: () => setRoomError(null),
+  };
 }

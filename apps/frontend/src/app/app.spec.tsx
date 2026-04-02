@@ -2,26 +2,28 @@ import { render } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 
 import App from './app';
+import { LanguageProvider } from './i18n/LanguageProvider';
 
 describe('App', () => {
   it('should render successfully', () => {
     const { baseElement } = render(
       <BrowserRouter>
-        <App />
+        <LanguageProvider>
+          <App />
+        </LanguageProvider>
       </BrowserRouter>,
     );
     expect(baseElement).toBeTruthy();
   });
 
-  it('should have a greeting as the title', () => {
-    const { getAllByText } = render(
+  it('should render the home title', () => {
+    const { getByText } = render(
       <BrowserRouter>
-        <App />
+        <LanguageProvider>
+          <App />
+        </LanguageProvider>
       </BrowserRouter>,
     );
-    expect(
-      getAllByText(new RegExp('Welcome @valencia-truc/frontend', 'gi')).length >
-        0,
-    ).toBeTruthy();
+    expect(getByText(/Truc Valencia/i)).toBeTruthy();
   });
 });

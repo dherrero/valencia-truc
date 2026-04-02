@@ -9,6 +9,7 @@ import { useTrucSocket } from '../hooks/useTrucSocket';
 import { TrucAction, Card, PlayerSeat } from '@valencia-truc/shared-interfaces';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Snackbar, Alert } from '@mui/material';
+import { useI18n } from '../i18n/LanguageProvider';
 
 // ── Sub-component for a single seat (top / right / left) ──────────────────────
 const SeatArea: React.FC<{
@@ -16,12 +17,13 @@ const SeatArea: React.FC<{
   isTurn?: boolean;
   isMano?: boolean;
 }> = ({ seat, isTurn, isMano }) => {
-  const label = seat.isPartner ? 'Company' : 'Rival';
+  const { t } = useI18n();
+  const label = seat.isPartner ? t('board.partner') : t('board.rival');
   const ringColor = seat.isPartner ? 'ring-blue-400/50' : 'ring-red-400/50';
   const textColor = seat.isPartner ? 'text-blue-300' : 'text-red-300';
   const name = seat.playerId
     ? seat.playerId.startsWith('bot-')
-      ? '🤖 Bot'
+      ? `🤖 ${t('board.bot')}`
       : `👤 ${seat.playerId.slice(0, 8)}…`
     : '…';
 
@@ -41,13 +43,15 @@ const SeatArea: React.FC<{
           {backs.length > 0 ? (
             backs.map((_, i) => <CardBack key={i} delay={i * 0.08} />)
           ) : (
-            <span className="text-slate-600 text-xs italic">Sense cartes</span>
+            <span className="text-slate-600 text-xs italic">
+              {t('board.emptySeat')}
+            </span>
           )}
         </AnimatePresence>
       </div>
       {isMano && (
         <div
-          title="mà de la partida"
+          title={t('board.manoTitle')}
           className="w-4 h-4 bg-red-500 rounded-full border border-white shadow-md z-10 mt-1"
         />
       )}
@@ -60,6 +64,7 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
   roomUid,
   playerId,
 }) => {
+  const { t } = useI18n();
   const {
     gameState,
     gameOver,
@@ -87,7 +92,7 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
   );
   const leftSeat = gameState?.otherPlayers?.find((p) => p.position === 'left');
   const getTeamLabel = (team: 'equipo1' | 'equipo2') =>
-    team === 'equipo1' ? 'Nosaltres' : 'Rivals';
+    team === 'equipo1' ? t('board.us') : t('board.rivals');
 
   // ── Connection screen ───────────────────────────────────────────────────────
   if (connectionStatus !== 'connected') {
@@ -97,8 +102,8 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
           <div className="w-12 h-12 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin" />
           <div className="text-2xl font-bold text-emerald-300">
             {connectionStatus === 'connecting'
-              ? 'Connectant al servidor…'
-              : 'Desconnectat'}
+              ? t('board.connecting')
+              : t('board.disconnected')}
           </div>
         </div>
       </div>
@@ -108,7 +113,7 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
   // ── Game Over screen ─────────────────────────────────────────────────────────
   if (gameOver) {
     const isEquipo1 = gameOver.ganador === 'equipo1';
-    const winnerLabel = isEquipo1 ? 'Nosaltres' : 'Rivals';
+    const winnerLabel = isEquipo1 ? t('board.us') : t('board.rivals');
     // equipo1 = even indices in jugadoresOrden. We can't know player index here,
     // so display the winning team label generically.
     const weWon = isEquipo1;
@@ -133,15 +138,16 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
             className="text-5xl font-black text-white"
             style={{ textShadow: '0 0 40px rgba(52,211,153,0.6)' }}
           >
-            {weWon ? '¡Victoria!' : '¡Derrota!'}
+            {weWon ? t('board.victory') : t('board.defeat')}
           </h1>
           <p className="text-emerald-300 text-xl">
-            Guanya <span className="font-bold text-white">{winnerLabel}</span>
+            {t('board.winners')}{' '}
+            <span className="font-bold text-white">{winnerLabel}</span>
           </p>
           <div className="flex gap-8 bg-black/30 rounded-2xl px-10 py-6 border border-emerald-700/40">
             <div className="text-center">
               <p className="text-emerald-400 text-sm uppercase tracking-widest mb-1">
-                Nosotros
+                {t('board.us')}
               </p>
               <p className="text-4xl font-black text-white">
                 {gameOver.score.equipo1}
@@ -152,7 +158,7 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
             </div>
             <div className="text-center">
               <p className="text-red-400 text-sm uppercase tracking-widest mb-1">
-                Rivals
+                {t('board.rivals')}
               </p>
               <p className="text-4xl font-black text-white">
                 {gameOver.score.equipo2}
@@ -165,7 +171,7 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
             whileTap={{ scale: 0.95 }}
             className="mt-4 px-10 py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-black text-xl rounded-2xl shadow-2xl transition-colors cursor-pointer"
           >
-            Tornar al Lobby
+            {t('board.backLobby')}
           </motion.a>
         </motion.div>
       </div>
@@ -196,7 +202,7 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
             <span role="img" aria-label="cartes">
               🃏
             </span>{' '}
-            Truc Valencià
+            {t('app.name')}
           </h1>
           <div className="flex gap-4">
             {[0, 0.05, 0.1].map((_, i) => (
@@ -221,11 +227,11 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
               className="mt-4 px-12 py-5 bg-emerald-500 hover:bg-emerald-400 text-white font-black text-2xl rounded-2xl shadow-2xl transition-colors"
               style={{ boxShadow: '0 0 40px rgba(52,211,153,0.4)' }}
             >
-              ¡Repartir Cartes!
+              {t('board.dealCards')}
             </motion.button>
           ) : (
             <p className="text-emerald-500 animate-pulse text-lg">
-              Esperant jugadors…
+              {t('board.waitingPlayers')}
             </p>
           )}
         </motion.div>
@@ -253,13 +259,15 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
             className="w-full max-w-md rounded-3xl border border-emerald-700/70 bg-emerald-950/95 p-6 text-white shadow-2xl backdrop-blur-sm"
           >
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-emerald-300">
-              Final de ronda
+              {t('board.roundEnd')}
             </p>
-            <h2 className="mt-2 text-3xl font-black">Resum de pedres</h2>
+            <h2 className="mt-2 text-3xl font-black">
+              {t('board.roundSummary')}
+            </h2>
             <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
               <div className="rounded-2xl border border-emerald-800 bg-black/20 p-4">
                 <p className="text-emerald-300 uppercase tracking-wider text-xs">
-                  Nosaltres
+                  {t('board.us')}
                 </p>
                 <p className="mt-2 text-3xl font-black text-white">
                   +{roundSummary.awarded.equipo1}
@@ -267,7 +275,7 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
               </div>
               <div className="rounded-2xl border border-emerald-800 bg-black/20 p-4">
                 <p className="text-red-300 uppercase tracking-wider text-xs">
-                  Rivals
+                  {t('board.rivals')}
                 </p>
                 <p className="mt-2 text-3xl font-black text-white">
                   +{roundSummary.awarded.equipo2}
@@ -285,20 +293,24 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
               {roundSummary.reasons.length > 0 && (
                 <div className="mt-3 border-t border-emerald-800 pt-3">
                   <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">
-                    Per que
+                    {t('board.because')}
                   </p>
                   <div className="mt-2 space-y-1">
                     {roundSummary.reasons.map((entry, index) => (
-                      <p key={`${entry.team}-${entry.reason}-${index}`}>
-                        {getTeamLabel(entry.team)} guanya {entry.points} pedra
-                        {entry.points === 1 ? '' : 's'} per {entry.reason}
+                      <p key={`${entry.team}-${entry.reasonKey}-${index}`}>
+                        {t('board.summaryLine', {
+                          team: getTeamLabel(entry.team),
+                          points: entry.points,
+                          suffix: entry.points === 1 ? '' : 's',
+                          reason: t(`summaryReasons.${entry.reasonKey}`),
+                        })}
                       </p>
                     ))}
                   </div>
                 </div>
               )}
               <p className="mt-3 font-semibold text-emerald-300">
-                Marcador: {roundSummary.scoreAfter.equipo1} -{' '}
+                {t('board.score')}: {roundSummary.scoreAfter.equipo1} -{' '}
                 {roundSummary.scoreAfter.equipo2}
               </p>
             </div>
@@ -308,7 +320,7 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
                 onClick={() => sendAction(TrucAction.REPARTIR)}
                 className="mt-5 w-full rounded-2xl bg-emerald-500 px-5 py-4 text-lg font-black text-white transition-colors hover:bg-emerald-400"
               >
-                Seguent ronda
+                {t('board.nextRound')}
               </button>
             )}
           </motion.div>
@@ -340,9 +352,9 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
         {leftSeat && (
           <div className="flex flex-col items-center gap-1">
             <p className="text-red-300 text-[10px] font-bold uppercase tracking-widest bg-emerald-900/80 px-2 rounded">
-              Rival ·{' '}
+              {t('board.rival')} ·{' '}
               {leftSeat.playerId.startsWith('bot-')
-                ? '🤖 Bot'
+                ? `🤖 ${t('board.bot')}`
                 : `👤 ${leftSeat.playerId.slice(0, 8)}…`}
             </p>
             <div className="flex flex-row items-center gap-4">
@@ -364,7 +376,7 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
               </div>
               {gameState?.manoOriginal === leftSeat.playerId && (
                 <div
-                  title="mà de la partida"
+                  title={t('board.manoTitle')}
                   className="w-4 h-4 bg-red-500 rounded-full border border-white shadow-md z-10"
                 />
               )}
@@ -378,15 +390,15 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
         {rightSeat && (
           <div className="flex flex-col items-center gap-1">
             <p className="text-red-300 text-[10px] font-bold uppercase tracking-widest bg-emerald-900/80 px-2 rounded">
-              Rival ·{' '}
+              {t('board.rival')} ·{' '}
               {rightSeat.playerId.startsWith('bot-')
-                ? '🤖 Bot'
+                ? `🤖 ${t('board.bot')}`
                 : `👤 ${rightSeat.playerId.slice(0, 8)}…`}
             </p>
             <div className="flex flex-row items-center gap-4">
               {gameState?.manoOriginal === rightSeat.playerId && (
                 <div
-                  title="mà de la partida"
+                  title={t('board.manoTitle')}
                   className="w-4 h-4 bg-red-500 rounded-full border border-white shadow-md z-10"
                 />
               )}
@@ -445,7 +457,7 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
               )
             ) : (
               <span className="text-emerald-800/50 font-bold text-2xl uppercase tracking-widest">
-                Mesa
+                {t('board.table')}
               </span>
             )}
           </AnimatePresence>
@@ -453,7 +465,7 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
       </div>
 
       {/* ── ACTION BUTTONS ── */}
-      <div className="absolute bottom-52 left-1/2 -translate-x-1/2 z-20">
+      <div className="absolute bottom-6 left-4 z-20 max-w-[min(420px,calc(100vw-2rem))]">
         <AnimatePresence>
           {(gameState?.allowedActions?.length ?? 0) > 0 &&
             !gameState?.allowedActions.includes(TrucAction.REPARTIR) && (
@@ -471,7 +483,7 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
       >
         {gameState?.manoOriginal === playerId && (
           <div
-            title="mà de la partida"
+            title={t('board.manoTitle')}
             className="w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-md z-30 mb-1"
           />
         )}
@@ -497,10 +509,10 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
         {hasHand && (
           <p className="text-emerald-300 text-[10px] font-semibold uppercase tracking-widest opacity-70 mt-2 bg-emerald-950 px-2 py-1 rounded">
             {canChooseTieBreaker
-              ? '🂠 Tria la carta descoberta'
+              ? `🂠 ${t('board.chooseUpCard')}`
               : gameState?.turnoActual === playerId
-                ? '🟢 És el teu torn'
-                : '🃏 Les teues cartes'}
+                ? `🟢 ${t('board.yourTurn')}`
+                : `🃏 ${t('board.yourCards')}`}
           </p>
         )}
       </div>

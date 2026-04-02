@@ -142,7 +142,7 @@ describe('trucMachine', () => {
           expect.objectContaining({
             team: 'equipo1',
             points: 1,
-            reason: 'truc no volgut',
+            reasonKey: 'truc-rejected',
           }),
         ],
       }),

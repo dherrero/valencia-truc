@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ActionLogEntry } from '@valencia-truc/shared-interfaces';
+import { useI18n } from '../i18n/LanguageProvider';
 
 interface GameLogProps {
   entries: ActionLogEntry[];
@@ -9,45 +10,51 @@ interface GameLogProps {
 function getActorLabel(
   entryPlayerId: string | undefined,
   currentPlayerId: string,
+  translate: (key: string, params?: Record<string, string | number>) => string,
 ) {
-  if (!entryPlayerId) return 'La taula';
-  if (entryPlayerId === currentPlayerId) return 'Tu';
-  if (entryPlayerId.startsWith('bot-')) return 'Bot';
-  return 'Jugador';
+  if (!entryPlayerId) return translate('log.table');
+  if (entryPlayerId === currentPlayerId) return translate('log.you');
+  if (entryPlayerId.startsWith('bot-')) return translate('log.bot');
+  return translate('log.player');
 }
 
-function formatEntry(entry: ActionLogEntry, currentPlayerId: string) {
-  const actor = getActorLabel(entry.jugadorId, currentPlayerId);
+function formatEntry(
+  entry: ActionLogEntry,
+  currentPlayerId: string,
+  translate: (key: string, params?: Record<string, string | number>) => string,
+) {
+  const actor = getActorLabel(entry.jugadorId, currentPlayerId, translate);
 
   switch (entry.type) {
     case 'REPARTIR':
-      return 'Nova ronda repartida';
+      return translate('log.deal');
     case 'TRUC':
-      return `${actor} canta truc`;
+      return translate('log.truc', { actor });
     case 'RETRUC':
-      return `${actor} canta retruc`;
+      return translate('log.retruc', { actor });
     case 'VALE_QUATRE':
-      return `${actor} canta vale quatre`;
+      return translate('log.valeQuatre', { actor });
     case 'JUEGO_FUERA':
-      return `${actor} canta joc fora`;
+      return translate('log.juegoFuera', { actor });
     case 'ENVIDO':
-      return `${actor} canta envido`;
+      return translate('log.envido', { actor });
     case 'TORNA_CHO':
-      return `${actor} diu torna-cho`;
+      return translate('log.tornaCho', { actor });
     case 'QUIERO':
-      return `${actor} diu quiero`;
+      return translate('log.quiero', { actor });
     case 'NO_QUIERO':
-      return `${actor} no vol`;
+      return translate('log.noQuiero', { actor });
     case 'JUGAR_CARTA':
-      return `${actor} tira carta`;
+      return translate('log.playCard', { actor });
     case 'ELEGIR_CARTA_DESEMPATE':
-      return `${actor} tria descoberta`;
+      return translate('log.tieBreaker', { actor });
     default:
       return entry.type;
   }
 }
 
 export const GameLog: React.FC<GameLogProps> = ({ entries, playerId }) => {
+  const { t } = useI18n();
   const [isCollapsed, setIsCollapsed] = useState(true);
   const visibleEntries = entries.slice(-6).reverse();
 
@@ -62,10 +69,10 @@ export const GameLog: React.FC<GameLogProps> = ({ entries, playerId }) => {
       >
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">
-            Historial
+            {t('log.title')}
           </p>
           <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-500">
-            Ultimes 6
+            {t('log.latest')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -84,7 +91,7 @@ export const GameLog: React.FC<GameLogProps> = ({ entries, playerId }) => {
               key={entry.id}
               className="rounded-xl border border-emerald-800/80 bg-black/20 px-3 py-2 text-sm font-medium text-emerald-50"
             >
-              {formatEntry(entry, playerId)}
+              {formatEntry(entry, playerId, t)}
             </div>
           ))}
         </div>
