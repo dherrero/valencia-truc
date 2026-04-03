@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import {
   ClientToServerEvents,
+  GameOverState,
   ServerToClientEvents,
   GameStateUpdate,
   TrucAction,
@@ -9,6 +10,16 @@ import {
 import { useI18n } from '../i18n/LanguageProvider';
 
 const SOCKET_URL = 'http://localhost:3333';
+const GAMESTATE_KEY = 'truc_gamestate';
+const GAMESTATE_ROOM_KEY = 'truc_gamestate_room';
+
+function inferPhase(
+  state: Partial<GameStateUpdate>,
+): 'lobby' | 'playing' | 'roundSummary' {
+  if (state.phase) return state.phase;
+  if (state.roundSummary) return 'roundSummary';
+  return (state.hand?.length ?? 0) > 0 ? 'playing' : 'lobby';
+}
 
 export function useTrucSocket(roomUid: string, playerId: string) {
   const { t } = useI18n();
@@ -17,10 +28,11 @@ export function useTrucSocket(roomUid: string, playerId: string) {
     ClientToServerEvents
   > | null>(null);
   const [gameState, setGameState] = useState<GameStateUpdate | null>(null);
-  const [gameOver, setGameOver] = useState<{
-    ganador: 'equipo1' | 'equipo2';
-    score: { equipo1: number; equipo2: number };
-  } | null>(null);
+  const [gameOver, setGameOver] = useState<GameOverState | null>(null);
+  const [sessionPhase, setSessionPhase] = useState<
+    'lobby' | 'playing' | 'roundSummary' | 'gameOver'
+  >('lobby');
+  const hasGameStartedRef = useRef(false);
   const [connectionStatus, setConnectionStatus] = useState<
     'connecting' | 'connected' | 'error' | 'disconnected'
   >('connecting');
@@ -42,41 +54,60 @@ export function useTrucSocket(roomUid: string, playerId: string) {
 
     newSocket.on('game:state-update', (state) => {
       setGameState(state);
+      if (state.phase !== 'lobby') {
+        hasGameStartedRef.current = true;
+      }
+
+      setSessionPhase((current) => {
+        if (state.phase === 'lobby' && hasGameStartedRef.current) {
+          return current === 'gameOver' ? current : 'playing';
+        }
+
+        return state.phase;
+      });
       // Persist latest state to localStorage for fast reload
-      localStorage.setItem('truc_gamestate', JSON.stringify(state));
+      localStorage.setItem(GAMESTATE_KEY, JSON.stringify(state));
+      localStorage.setItem(GAMESTATE_ROOM_KEY, roomUid);
     });
 
     newSocket.on('room:destroyed', () => {
       setConnectionStatus('disconnected');
+      setGameState(null);
+      setSessionPhase('lobby');
+      hasGameStartedRef.current = false;
       localStorage.removeItem('truc_uid');
       localStorage.removeItem('truc_player');
-      localStorage.removeItem('truc_gamestate');
+      localStorage.removeItem(GAMESTATE_KEY);
+      localStorage.removeItem(GAMESTATE_ROOM_KEY);
     });
 
     newSocket.on('disconnect', () => setConnectionStatus('disconnected'));
     newSocket.on('connect_error', () => setConnectionStatus('error'));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (newSocket as any).on(
-      'game:over',
-      (data: {
-        ganador: 'equipo1' | 'equipo2';
-        score: { equipo1: number; equipo2: number };
-      }) => {
-        setGameOver(data);
-      },
-    );
-
-    setSocket(newSocket);
+    newSocket.on('game:over', (data) => {
+      setGameOver(data);
+      setSessionPhase('gameOver');
+    });
 
     // Hydrate from localStorage while socket connects
-    const cached = localStorage.getItem('truc_gamestate');
-    if (cached) {
+    const cachedRoom = localStorage.getItem(GAMESTATE_ROOM_KEY);
+    const cached = localStorage.getItem(GAMESTATE_KEY);
+    if (cached && cachedRoom === roomUid) {
       try {
-        setGameState(JSON.parse(cached));
+        const parsed = JSON.parse(cached) as GameStateUpdate;
+        setGameState(parsed);
+        const inferredPhase = inferPhase(parsed);
+        if (inferredPhase !== 'lobby') {
+          hasGameStartedRef.current = true;
+          setSessionPhase(inferredPhase);
+        } else {
+          setSessionPhase('lobby');
+        }
       } catch {
         /* ignore */
       }
     }
+
+    setSocket(newSocket);
 
     return () => {
       newSocket.off('connect');
@@ -84,7 +115,7 @@ export function useTrucSocket(roomUid: string, playerId: string) {
       newSocket.off('room:destroyed');
       newSocket.off('disconnect');
       newSocket.off('connect_error');
-      newSocket.off('game:over' as any);
+      newSocket.off('game:over');
       newSocket.disconnect();
     };
   }, [roomUid, playerId]);
@@ -102,10 +133,31 @@ export function useTrucSocket(roomUid: string, playerId: string) {
     [socket, connectionStatus, t],
   );
 
+  const destroyRoom = useCallback(() => {
+    return new Promise<void>((resolve, reject) => {
+      if (!socket) {
+        reject(new Error('Socket not available'));
+        return;
+      }
+
+      socket.emit('room:destroy', (res) => {
+        if (res.status === 'error') {
+          setRoomError(res.message || t('socket.actionError'));
+          reject(new Error(res.message || 'Failed to destroy room'));
+          return;
+        }
+
+        resolve();
+      });
+    });
+  }, [socket, t]);
+
   return {
     gameState,
     gameOver,
+    sessionPhase,
     sendAction,
+    destroyRoom,
     connectionStatus,
     roomError,
     clearError: () => setRoomError(null),

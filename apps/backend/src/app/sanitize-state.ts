@@ -26,6 +26,7 @@ export function sanitizeGameState(
   allowedActions: TrucAction[],
   board: Card[],
   allPlayerIds: string[] = [],
+  phase: 'lobby' | 'playing' | 'roundSummary' = 'playing',
 ): GameStateUpdate {
   const myCards = context.cartasJugadores?.[playerId] ?? [];
 
@@ -69,6 +70,7 @@ export function sanitizeGameState(
     board,
     hand: myCards,
     score: context.puntuacionCama,
+    phase,
     allowedActions,
     actionLog: context.historialAcciones,
     activeBet: getActiveBetState({ context } as never),

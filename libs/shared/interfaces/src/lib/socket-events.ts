@@ -57,6 +57,7 @@ export interface GameStateUpdate {
   board: Card[];
   hand: Card[];
   score: TeamPoints;
+  phase: 'lobby' | 'playing' | 'roundSummary';
   allowedActions: TrucAction[];
   actionLog: ActionLogEntry[];
   activeBet?: ActiveBetState;
@@ -68,6 +69,12 @@ export interface GameStateUpdate {
   manoOriginal?: string;
   cartasEnMesa?: { jugadorId: string; carta: Card }[];
   bazaResults?: Array<'equipo1' | 'equipo2' | 'empate'>;
+}
+
+export interface GameOverState {
+  ganador: 'equipo1' | 'equipo2';
+  score: TeamPoints;
+  summary?: RoundSummary;
 }
 
 export interface RoomSummary {
@@ -100,10 +107,14 @@ export interface ClientToServerEvents {
     action: { type: string; payload?: unknown },
     callback: (res: { status: 'ok' | 'error'; message?: string }) => void,
   ) => void;
+  'room:destroy': (
+    callback: (res: { status: 'ok' | 'error'; message?: string }) => void,
+  ) => void;
 }
 
 export interface ServerToClientEvents {
   'rooms:list': (rooms: RoomSummary[]) => void;
   'room:destroyed': (message: string) => void;
   'game:state-update': (state: GameStateUpdate) => void;
+  'game:over': (data: GameOverState) => void;
 }

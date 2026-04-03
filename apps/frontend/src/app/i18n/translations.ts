@@ -50,7 +50,7 @@ export const translations: Record<Language, TranslationTree> = {
         'Es juga amb 22 cartes. No entren els dosos, vuits, nous ni figures. La jerarquia principal es: as despases, as de bastos, set despases, set doros, tresos, sets falsos, sisos, cincos i quatres.',
       roundTitle: 'Com va una ronda',
       roundBody:
-        'Cada jugador tira una carta per torn. Qui guanya la baza ix primer en la seguent. La primera parella que guanya dos bases guanya la ronda. Si la primera baza empata, es juga el desempate amb una carta descoberta i una oculta.',
+        'Cada jugador tira una carta per torn. Qui guanya la baza ix primer en la seguent. La primera parella que guanya dos bases guanya la ronda. Si la primera baza empata, es passen a jugar directament les dues seguents.',
       trucTitle: 'El truc',
       trucBody:
         'El truc es una aposta sobre la ronda. Es pot cantar durant la ronda i la resposta pot ser vull, no vull, retruc, vale quatre o joc fora.',
@@ -59,7 +59,7 @@ export const translations: Record<Language, TranslationTree> = {
         'Lenvido nomes es pot cantar en la primera ma i sempre abans del truc. Guanya qui te millor combinacio de dos cartes del mateix pal. Si ningú lliga pal, compta la carta mes alta.',
       hiddenTitle: 'Cartes tapades',
       hiddenBody:
-        'Les cartes tapades poden servir per enganyar, pero no compten per lenvido. Si en tires una tapada en la primera ma, la resta tambe les hauràs de tirar tapades.',
+        'Per ara no fem servir la mecànica de cartes tapades en el desempate. El joc continua amb les cartes normals i el lenvido segueix sense comptar les cartes ocultes.',
     },
     board: {
       connecting: 'Connectant al servidor...',
@@ -70,6 +70,8 @@ export const translations: Record<Language, TranslationTree> = {
       us: 'Nosaltres',
       rivals: 'Rivals',
       backLobby: 'Tornar al lobby',
+      newGame: 'Iniciar partida nova',
+      finalSummary: 'Resum final',
       waitingPlayers: 'Esperant jugadors...',
       dealCards: 'Repartir cartes',
       partner: 'Company',
@@ -202,7 +204,7 @@ export const translations: Record<Language, TranslationTree> = {
         'Se juega con 22 cartas. No entran los doses, ochos, nueves ni figuras. La jerarquia principal es: as de espadas, as de bastos, siete de espadas, siete de oros, treses, sietes falsos, seises, cincos y cuatros.',
       roundTitle: 'Como va una ronda',
       roundBody:
-        'Cada jugador tira una carta por turno. Quien gana la baza sale primero en la siguiente. La primera pareja que gana dos bazas gana la ronda. Si la primera baza empata, se juega el desempate con una carta descubierta y una oculta.',
+        'Cada jugador tira una carta por turno. Quien gana la baza sale primero en la siguiente. La primera pareja que gana dos bazas gana la ronda. Si la primera baza empata, se juegan directamente las dos siguientes.',
       trucTitle: 'El truco',
       trucBody:
         'El truco es una apuesta sobre la ronda. Se puede cantar durante la ronda y la respuesta puede ser quiero, no quiero, retruco, vale cuatro o juego fuera.',
@@ -211,7 +213,7 @@ export const translations: Record<Language, TranslationTree> = {
         'El envido solo se puede cantar en la primera mano y siempre antes del truco. Gana quien tiene mejor combinacion de dos cartas del mismo palo. Si nadie liga palo, cuenta la carta mas alta.',
       hiddenTitle: 'Cartas tapadas',
       hiddenBody:
-        'Las cartas tapadas pueden servir para enganar, pero no cuentan para el envido. Si tiras una tapada en la primera mano, el resto tambien las tendras que tirar tapadas.',
+        'Por ahora no usamos la mecanica de cartas tapadas en el desempate. La partida sigue con cartas normales y el envido sigue sin contar las cartas ocultas.',
     },
     board: {
       connecting: 'Conectando al servidor...',
@@ -222,6 +224,8 @@ export const translations: Record<Language, TranslationTree> = {
       us: 'Nosotros',
       rivals: 'Rivales',
       backLobby: 'Volver al lobby',
+      newGame: 'Iniciar partida nueva',
+      finalSummary: 'Resumen final',
       waitingPlayers: 'Esperando jugadores...',
       dealCards: 'Repartir cartas',
       partner: 'Compañero',

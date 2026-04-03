@@ -123,20 +123,6 @@ export class TrucBot {
       }
     }
 
-    if (can(TrucAction.ELEGIR_CARTA_DESEMPATE) && misCartas.length >= 2) {
-      const strongestCard = [...misCartas].sort(
-        (a, b) => getCardPower(b) - getCardPower(a),
-      )[0];
-      if (strongestCard) {
-        this.actor.send({
-          type: 'ELEGIR_CARTA_DESEMPATE',
-          jugadorId: this.botId,
-          cartaDescubierta: strongestCard,
-        });
-      }
-      return;
-    }
-
     // 4. Play the weakest card
     fs.appendFileSync(
       'bot-debug.log',

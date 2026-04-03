@@ -46,8 +46,6 @@ function formatEntry(
       return translate('log.noQuiero', { actor });
     case 'JUGAR_CARTA':
       return translate('log.playCard', { actor });
-    case 'ELEGIR_CARTA_DESEMPATE':
-      return translate('log.tieBreaker', { actor });
     default:
       return entry.type;
   }

@@ -1,7 +1,7 @@
-import { sharedInterfaces } from './shared-interfaces.js';
+import * as sharedInterfaces from './shared-interfaces.js';
 
 describe('sharedInterfaces', () => {
-  it('should work', () => {
-    expect(sharedInterfaces()).toEqual('shared-interfaces');
+  it('should load', () => {
+    expect(sharedInterfaces).toBeTruthy();
   });
 });

@@ -20,7 +20,6 @@ type EstadoTruc = 'ninguno' | 'truc' | 'retruc' | 'vale_quatre' | 'juego_fuera';
 type EstadoEnvido = 'ninguno' | 'envido' | 'torna_cho';
 
 type CartaEnMesa = { jugadorId: string; carta: Card; isOculta?: boolean };
-type CartaDesempate = { jugadorId: string; cartaDescubierta: Card };
 
 type MachineSnapshot = SnapshotFrom<typeof trucMachine>;
 
@@ -43,7 +42,6 @@ export interface TrucContext {
   equipoApostadorTruc: Team | null;
   respuestaTrucPendiente: boolean;
   rondaTerminadaPorRechazo: boolean;
-  desempateCartasSeleccionadas: CartaDesempate[];
   puntosPendientesEnvido: TeamPoints;
   puntosPendientesTruc: TeamPoints;
   motivosPendientesEnvido: RoundAwardReason[];
@@ -91,15 +89,12 @@ function isRoundPlayable(snapshot: MachineSnapshot): boolean {
     snapshot.matches({ ronda: 'mano_1' }) ||
     snapshot.matches({ ronda: 'mano_2' }) ||
     snapshot.matches({ ronda: 'mano_3' }) ||
-    snapshot.matches({ ronda: 'mano_desempate' }) ||
     snapshot.matches({ ronda: 'esperando_evaluar_1' }) ||
     snapshot.matches({ ronda: 'esperando_evaluar_2' }) ||
     snapshot.matches({ ronda: 'esperando_evaluar_3' }) ||
-    snapshot.matches({ ronda: 'esperando_evaluar_desempate' }) ||
     snapshot.matches({ ronda: 'evaluar_baza_1' }) ||
     snapshot.matches({ ronda: 'evaluar_baza_2' }) ||
-    snapshot.matches({ ronda: 'evaluar_baza_3' }) ||
-    snapshot.matches({ ronda: 'evaluar_baza_desempate' })
+    snapshot.matches({ ronda: 'evaluar_baza_3' })
   );
 }
 
@@ -373,17 +368,6 @@ export function getAllowedActions(
     return allowedActions;
   }
 
-  if (snapshot.matches({ ronda: 'mano_desempate' })) {
-    const alreadySelected = context.desempateCartasSeleccionadas.some(
-      (selection) => selection.jugadorId === jugadorId,
-    );
-    if (!alreadySelected && hand.length >= 2) {
-      allowedActions.push(TrucAction.ELEGIR_CARTA_DESEMPATE);
-    }
-
-    return allowedActions;
-  }
-
   if (context.turnoActual === jugadorId) {
     allowedActions.push(TrucAction.JUGAR_CARTA);
   }
@@ -448,7 +432,6 @@ export const trucMachine = createMachine(
       equipoApostadorTruc: null,
       respuestaTrucPendiente: false,
       rondaTerminadaPorRechazo: false,
-      desempateCartasSeleccionadas: [],
       puntosPendientesEnvido: { equipo1: 0, equipo2: 0 },
       puntosPendientesTruc: { equipo1: 0, equipo2: 0 },
       motivosPendientesEnvido: [],
@@ -494,45 +477,7 @@ export const trucMachine = createMachine(
             },
           },
           evaluar_baza_1: {
-            always: [
-              { guard: 'bazaEmpatada', target: 'mano_desempate' },
-              { target: 'mano_2' },
-            ],
-          },
-          mano_desempate: {
-            always: {
-              guard: 'todosEligieronDesempate',
-              target: 'esperando_evaluar_desempate',
-            },
-            on: {
-              ELEGIR_CARTA_DESEMPATE: {
-                actions: 'elegirCartaDesempate',
-                guard: 'tieneCartaYNoHaElegidoDesempate',
-              },
-            },
-          },
-          esperando_evaluar_desempate: {
-            after: {
-              1500: {
-                target: 'evaluar_baza_desempate',
-                actions: 'evaluarDesempateMano1',
-              },
-            },
-          },
-          evaluar_baza_desempate: {
-            always: [
-              {
-                guard: 'equipo1GanaRonda',
-                target: 'finalizar_ronda',
-                actions: 'anotarRondaEq1',
-              },
-              {
-                guard: 'equipo2GanaRonda',
-                target: 'finalizar_ronda',
-                actions: 'anotarRondaEq2',
-              },
-              { target: 'finalizar_ronda', actions: 'anotarRondaManoOriginal' },
-            ],
+            always: [{ target: 'mano_2' }],
           },
           mano_2: {
             always: {
@@ -873,12 +818,6 @@ export const trucMachine = createMachine(
       },
       mesaLlena: ({ context }) =>
         context.cartasEnMesa.length === context.jugadoresOrden.length,
-      bazaEmpatada: ({ context }) => {
-        const historial = context.historialBazas;
-        return (
-          historial.length > 0 && historial[historial.length - 1] === 'empate'
-        );
-      },
       esSuTurnoYTieneCarta: ({ context, event }) => {
         if (event.type !== 'JUGAR_CARTA') return false;
         if (context.respuestaEnvidoPendiente || context.respuestaTrucPendiente)
@@ -886,22 +825,6 @@ export const trucMachine = createMachine(
         if (context.turnoActual !== event.jugadorId) return false;
 
         return hasCard(context.cartasJugadores[event.jugadorId], event.carta);
-      },
-      todosEligieronDesempate: ({ context }) =>
-        context.desempateCartasSeleccionadas.length ===
-        context.jugadoresOrden.length,
-      tieneCartaYNoHaElegidoDesempate: ({ context, event }) => {
-        if (event.type !== 'ELEGIR_CARTA_DESEMPATE') return false;
-
-        const alreadySelected = context.desempateCartasSeleccionadas.some(
-          (selection) => selection.jugadorId === event.jugadorId,
-        );
-        if (alreadySelected) return false;
-
-        return hasCard(
-          context.cartasJugadores[event.jugadorId],
-          event.cartaDescubierta,
-        );
       },
       equipo1GanaRonda: ({ context }) => {
         const historial = context.historialBazas;
@@ -1281,7 +1204,6 @@ export const trucMachine = createMachine(
           equipoApostadorTruc: null,
           respuestaTrucPendiente: false,
           rondaTerminadaPorRechazo: false,
-          desempateCartasSeleccionadas: [],
           puntosPendientesEnvido: emptyTeamPoints(),
           puntosPendientesTruc: emptyTeamPoints(),
           motivosPendientesEnvido: [],
@@ -1321,125 +1243,6 @@ export const trucMachine = createMachine(
           },
           cartasEnMesa: nuevasCartasEnMesa,
           turnoActual: context.jugadoresOrden[nextIndex],
-        };
-      }),
-      elegirCartaDesempate: assign(({ context, event }) => {
-        if (event.type !== 'ELEGIR_CARTA_DESEMPATE') return {};
-
-        return {
-          ...appendActionLog(context, {
-            type: 'ELEGIR_CARTA_DESEMPATE',
-            jugadorId: event.jugadorId,
-          }),
-          desempateCartasSeleccionadas: [
-            ...context.desempateCartasSeleccionadas,
-            {
-              jugadorId: event.jugadorId,
-              cartaDescubierta: event.cartaDescubierta,
-            },
-          ],
-        };
-      }),
-      evaluarDesempateMano1: assign(({ context }) => {
-        let maxAbierta = -1;
-        let mejoresJugadas: Array<{
-          jugadorId: string;
-          cartaDescubierta: Card;
-          cartaOculta?: Card;
-        }> = [];
-
-        const jugadasMesa = context.desempateCartasSeleccionadas.map(
-          (selection) => {
-            const cartasRestantes =
-              context.cartasJugadores[selection.jugadorId] ?? [];
-            const cartaOculta = cartasRestantes.find(
-              (card) =>
-                !(
-                  card.suit === selection.cartaDescubierta.suit &&
-                  card.value === selection.cartaDescubierta.value
-                ),
-            );
-
-            return {
-              jugadorId: selection.jugadorId,
-              cartaDescubierta: selection.cartaDescubierta,
-              cartaOculta,
-            };
-          },
-        );
-
-        jugadasMesa.forEach((jugada) => {
-          const power = getCardPower(jugada.cartaDescubierta);
-          if (power > maxAbierta) {
-            maxAbierta = power;
-            mejoresJugadas = [jugada];
-            return;
-          }
-
-          if (power === maxAbierta) {
-            mejoresJugadas.push(jugada);
-          }
-        });
-
-        const equiposEmpatadosAbierta = new Set(
-          mejoresJugadas.map((jugada) =>
-            getPlayerTeam(context, jugada.jugadorId),
-          ),
-        );
-        let ganadorBaza: ResultadoBaza = 'empate';
-
-        if (equiposEmpatadosAbierta.size === 1) {
-          ganadorBaza = (Array.from(equiposEmpatadosAbierta)[0] ??
-            'empate') as ResultadoBaza;
-        } else {
-          let maxOculta = -1;
-          let finalistasOcultos: typeof mejoresJugadas = [];
-
-          mejoresJugadas.forEach((jugada) => {
-            if (!jugada.cartaOculta) {
-              finalistasOcultos.push(jugada);
-              return;
-            }
-
-            let powerOculta = getCardPower(jugada.cartaOculta);
-            const powerAbierta = getCardPower(jugada.cartaDescubierta);
-            if (powerOculta >= powerAbierta) {
-              powerOculta = 0;
-            }
-
-            if (powerOculta > maxOculta) {
-              maxOculta = powerOculta;
-              finalistasOcultos = [jugada];
-              return;
-            }
-
-            if (powerOculta === maxOculta) {
-              finalistasOcultos.push(jugada);
-            }
-          });
-
-          const equiposEmpatadosOculta = new Set(
-            finalistasOcultos.map((jugada) =>
-              getPlayerTeam(context, jugada.jugadorId),
-            ),
-          );
-          if (equiposEmpatadosOculta.size === 1) {
-            ganadorBaza = (Array.from(equiposEmpatadosOculta)[0] ??
-              'empate') as ResultadoBaza;
-          }
-        }
-
-        const historialBazas = [...context.historialBazas, ganadorBaza];
-        const cartasVacias: Record<string, Card[]> = {};
-        context.jugadoresOrden.forEach((jugadorId) => {
-          cartasVacias[jugadorId] = [];
-        });
-
-        return {
-          historialBazas,
-          desempateCartasSeleccionadas: [],
-          cartasEnMesa: [],
-          cartasJugadores: cartasVacias,
         };
       }),
       evaluarGanadorBaza: assign(({ context }) => {

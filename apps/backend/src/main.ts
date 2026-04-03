@@ -13,6 +13,7 @@ import {
 } from '@valencia-truc/shared-game-engine';
 import {
   ClientToServerEvents,
+  GameOverState,
   ServerToClientEvents,
   TrucAction,
   RoomSummary,
@@ -87,6 +88,17 @@ function getRoomSummary(room: Room): RoomSummary {
   };
 }
 
+function getGamePhase(snapshot: {
+  matches: (state: Record<string, string>) => boolean;
+}) {
+  if (snapshot.matches({ ronda: 'inicio' })) return 'lobby' as const;
+  if (snapshot.matches({ ronda: 'finalizar_ronda' })) {
+    return 'roundSummary' as const;
+  }
+
+  return 'playing' as const;
+}
+
 function broadcastRoomsList() {
   const list: RoomSummary[] = Array.from(rooms.values()).map(getRoomSummary);
   io.emit('rooms:list', list);
@@ -108,6 +120,7 @@ function emitStateToRoom(roomUid: string, actor: AnyActorRef) {
     const context = snapshot.context as TrucContext;
     const board: import('@valencia-truc/shared-interfaces').Card[] = [];
     const allPlayerIds = [...room.playerIds, ...room.botIds];
+    const phase = getGamePhase(snapshot);
 
     io.in(roomUid)
       .fetchSockets()
@@ -123,6 +136,7 @@ function emitStateToRoom(roomUid: string, actor: AnyActorRef) {
               allowedActions,
               board,
               allPlayerIds,
+              phase,
             );
             console.log(
               `[STATE] Room ${roomUid} | pId=${pId} | turnoActual=${context.turnoActual} | manoOriginal=${context.manoOriginal} | cartasEnMesa=${context.cartasEnMesa?.length}`,
@@ -147,12 +161,14 @@ function emitInitialState(
   const context = snapshot.context as TrucContext;
   const board: import('@valencia-truc/shared-interfaces').Card[] = [];
   const allowedActions = getAllowedActions(snapshot, playerId);
+  const phase = getGamePhase(snapshot);
   const sanitized = sanitizeGameState(
     context,
     playerId,
     allowedActions,
     board,
     allPlayerIds,
+    phase,
   );
   socket.emit('game:state-update', sanitized);
 }
@@ -175,11 +191,13 @@ function createRoom(name: string, botCount: number): Room {
     if (rondaState === 'game_over') {
       const ctx = state.context as TrucContext;
       const ganador = ctx.puntuacionCama.equipo1 >= 24 ? 'equipo1' : 'equipo2';
-      console.log(`[GAME OVER] Room ${uid} — ${ganador} wins!`);
-      io.in(uid).emit('game:over' as any, {
+      const gameOverData: GameOverState = {
         ganador,
         score: ctx.puntuacionCama,
-      });
+        summary: ctx.resumenRonda ?? undefined,
+      };
+      console.log(`[GAME OVER] Room ${uid} — ${ganador} wins!`);
+      io.in(uid).emit('game:over', gameOverData);
       return;
     }
 
@@ -374,6 +392,18 @@ io.on('connection', (socket: TrucSocket) => {
       broadcastRoomsList();
     }
 
+    callback({ status: 'ok' });
+  });
+
+  socket.on('room:destroy', (callback) => {
+    const uid = socket.roomUid;
+
+    if (!uid || !rooms.has(uid)) {
+      callback({ status: 'error', message: 'No existe la sala.' });
+      return;
+    }
+
+    destroyRoom(uid);
     callback({ status: 'ok' });
   });
 

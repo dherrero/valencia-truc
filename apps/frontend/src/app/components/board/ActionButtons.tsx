@@ -9,7 +9,9 @@ interface ActionButtonsProps {
   onAction: (action: TrucAction) => void;
 }
 
-const actionConfig: Record<TrucAction, { labelKey: string; color: string }> = {
+const actionConfig: Partial<
+  Record<TrucAction, { labelKey: string; color: string }>
+> = {
   [TrucAction.REPARTIR]: {
     labelKey: 'actions.repartir',
     color: 'bg-emerald-500 hover:bg-emerald-600 text-white',
@@ -47,10 +49,6 @@ const actionConfig: Record<TrucAction, { labelKey: string; color: string }> = {
     color: 'bg-gray-500 hover:bg-gray-600 text-white',
   },
   [TrucAction.JUGAR_CARTA]: { labelKey: 'actions.repartir', color: '' },
-  [TrucAction.ELEGIR_CARTA_DESEMPATE]: {
-    labelKey: 'actions.repartir',
-    color: '',
-  },
 };
 
 export const ActionButtons: React.FC<ActionButtonsProps> = ({
@@ -59,8 +57,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
 }) => {
   const { t } = useI18n();
   const buttonsToRender = allowedActions.filter(
-    (a) =>
-      a !== TrucAction.JUGAR_CARTA && a !== TrucAction.ELEGIR_CARTA_DESEMPATE,
+    (a) => a !== TrucAction.JUGAR_CARTA,
   );
 
   if (buttonsToRender.length === 0) return null;
@@ -74,6 +71,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     >
       {buttonsToRender.map((action) => {
         const config = actionConfig[action];
+        if (!config) return null;
         return (
           <button
             key={action}

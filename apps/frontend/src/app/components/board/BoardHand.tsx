@@ -10,7 +10,6 @@ interface BoardHandProps {
   manoOriginal?: string;
   turnPlayerId?: string;
   canPlayCard: boolean;
-  canChooseTieBreaker: boolean;
   onCardPlay: (action: TrucAction, payload: Card) => void;
 }
 
@@ -20,7 +19,6 @@ export const BoardHand: React.FC<BoardHandProps> = ({
   manoOriginal,
   turnPlayerId,
   canPlayCard,
-  canChooseTieBreaker,
   onCardPlay,
 }) => {
   const { t } = useI18n();
@@ -42,26 +40,17 @@ export const BoardHand: React.FC<BoardHandProps> = ({
             <CardComponent
               key={`hand-${card.suit}-${card.value}`}
               card={card}
-              isPlayable={canPlayCard || canChooseTieBreaker}
-              onClick={() =>
-                onCardPlay(
-                  canChooseTieBreaker
-                    ? TrucAction.ELEGIR_CARTA_DESEMPATE
-                    : TrucAction.JUGAR_CARTA,
-                  card,
-                )
-              }
+              isPlayable={canPlayCard}
+              onClick={() => onCardPlay(TrucAction.JUGAR_CARTA, card)}
             />
           ))}
         </AnimatePresence>
       </div>
       {hand.length > 0 && (
         <p className="text-emerald-300 text-[10px] font-semibold uppercase tracking-widest opacity-70 mt-2 bg-emerald-950 px-2 py-1 rounded">
-          {canChooseTieBreaker
-            ? `🂠 ${t('board.chooseUpCard')}`
-            : isCurrentTurn
-              ? `🟢 ${t('board.yourTurn')}`
-              : `🃏 ${t('board.yourCards')}`}
+          {isCurrentTurn
+            ? `🟢 ${t('board.yourTurn')}`
+            : `🃏 ${t('board.yourCards')}`}
         </p>
       )}
     </div>

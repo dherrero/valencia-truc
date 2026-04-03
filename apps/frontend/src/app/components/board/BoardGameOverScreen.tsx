@@ -1,15 +1,20 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { RoundSummary } from '@valencia-truc/shared-interfaces';
 import { useI18n } from '../../i18n/LanguageProvider';
 
 interface BoardGameOverScreenProps {
   winner: 'equipo1' | 'equipo2';
   score: { equipo1: number; equipo2: number };
+  roundSummary?: RoundSummary;
+  onNewGame: () => void | Promise<void>;
 }
 
 export const BoardGameOverScreen: React.FC<BoardGameOverScreenProps> = ({
   winner,
   score,
+  roundSummary,
+  onNewGame,
 }) => {
   const { t } = useI18n();
   const isEquipo1 = winner === 'equipo1';
@@ -58,14 +63,45 @@ export const BoardGameOverScreen: React.FC<BoardGameOverScreenProps> = ({
             <p className="text-4xl font-black text-white">{score.equipo2}</p>
           </div>
         </div>
-        <motion.a
-          href="/"
+        {roundSummary && (
+          <div className="w-full max-w-md rounded-2xl border border-emerald-700/40 bg-black/20 p-4 text-left text-sm text-emerald-100">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">
+              {t('board.finalSummary')}
+            </p>
+            <p className="mt-2">
+              {t('board.score')}: {roundSummary.scoreAfter.equipo1} -{' '}
+              {roundSummary.scoreAfter.equipo2}
+            </p>
+            <p className="mt-2">
+              Envido: {roundSummary.envido.equipo1} -{' '}
+              {roundSummary.envido.equipo2}
+            </p>
+            <p>
+              Truc: {roundSummary.truc.equipo1} - {roundSummary.truc.equipo2}
+            </p>
+            {roundSummary.reasons.length > 0 && (
+              <div className="mt-3 space-y-1 border-t border-emerald-800 pt-3 text-xs text-emerald-200">
+                {roundSummary.reasons.map((reason, index) => (
+                  <p key={`${reason.team}-${reason.reasonKey}-${index}`}>
+                    {reason.team === 'equipo1'
+                      ? t('board.us')
+                      : t('board.rivals')}{' '}
+                    +{reason.points} ({t(`summaryReasons.${reason.reasonKey}`)})
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        <motion.button
+          type="button"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
+          onClick={onNewGame}
           className="mt-4 px-10 py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-black text-xl rounded-2xl shadow-2xl transition-colors cursor-pointer"
         >
-          {t('board.backLobby')}
-        </motion.a>
+          {t('board.newGame')}
+        </motion.button>
       </motion.div>
     </div>
   );

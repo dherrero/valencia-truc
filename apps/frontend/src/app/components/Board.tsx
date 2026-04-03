@@ -1,6 +1,7 @@
 import React from 'react';
 import { TrucAction, PlayerSeat } from '@valencia-truc/shared-interfaces';
 import { Snackbar, Alert } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { useTrucSocket } from '../hooks/useTrucSocket';
 import { ActiveBetBanner } from './board/ActiveBetBanner';
 import { ScoreBoard } from './board/ScoreBoard';
@@ -20,25 +21,23 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
   roomUid,
   playerId,
 }) => {
+  const navigate = useNavigate();
   const {
     gameState,
     gameOver,
     sendAction,
+    destroyRoom,
+    sessionPhase,
     connectionStatus,
     roomError,
     clearError,
   } = useTrucSocket(roomUid, playerId);
 
-  const hasHand = (gameState?.hand?.length ?? 0) > 0;
-  const hasRoundSummary = gameState?.roundSummary != null;
-  const isLobby = gameState != null && !hasHand && !hasRoundSummary;
+  const isLobby = sessionPhase === 'lobby';
   const canDeal =
     gameState?.allowedActions.includes(TrucAction.REPARTIR) ?? false;
   const canPlayCard =
     gameState?.allowedActions.includes(TrucAction.JUGAR_CARTA) ?? false;
-  const canChooseTieBreaker =
-    gameState?.allowedActions.includes(TrucAction.ELEGIR_CARTA_DESEMPATE) ??
-    false;
   const roundSummary = gameState?.roundSummary;
 
   const topSeat = gameState?.otherPlayers?.find((p) => p.position === 'top');
@@ -47,14 +46,8 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
   );
   const leftSeat = gameState?.otherPlayers?.find((p) => p.position === 'left');
 
-  if (connectionStatus !== 'connected') {
+  if (!gameOver && connectionStatus !== 'connected') {
     return <BoardConnectionState status={connectionStatus} />;
-  }
-
-  if (gameOver) {
-    return (
-      <BoardGameOverScreen winner={gameOver.ganador} score={gameOver.score} />
-    );
   }
 
   if (isLobby) {
@@ -80,7 +73,7 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
 
       <GameLog entries={gameState?.actionLog ?? []} playerId={playerId} />
 
-      {roundSummary && (
+      {!gameOver && roundSummary && (
         <BoardRoundSummaryModal
           roundSummary={roundSummary}
           canDeal={canDeal}
@@ -131,7 +124,6 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
         manoOriginal={gameState?.manoOriginal}
         turnPlayerId={gameState?.turnoActual}
         canPlayCard={canPlayCard}
-        canChooseTieBreaker={canChooseTieBreaker}
         onCardPlay={sendAction}
       />
 
@@ -150,6 +142,22 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
           {roomError}
         </Alert>
       </Snackbar>
+
+      {gameOver && (
+        <BoardGameOverScreen
+          winner={gameOver.ganador}
+          score={gameOver.score}
+          roundSummary={gameOver.summary}
+          onNewGame={async () => {
+            try {
+              await destroyRoom();
+              navigate('/', { replace: true });
+            } catch {
+              /* error already surfaced */
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

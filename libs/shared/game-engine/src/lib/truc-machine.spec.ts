@@ -149,7 +149,7 @@ describe('trucMachine', () => {
     );
   });
 
-  it('ofrece una acción de desempate tras empatar la primera baza', () => {
+  it('pasa a la segunda baza si la primera empata', () => {
     jest.useFakeTimers();
 
     const actor = createActor(trucMachine);
@@ -209,8 +209,9 @@ describe('trucMachine', () => {
     const snapshot = actor.getSnapshot();
     const accionesP1 = getAllowedActions(snapshot, 'p1');
 
-    expect(snapshot.matches({ ronda: 'mano_desempate' })).toBe(true);
-    expect(accionesP1).toContain(
+    expect(snapshot.matches({ ronda: 'mano_2' })).toBe(true);
+    expect(accionesP1).toContain(TrucAction.JUGAR_CARTA);
+    expect(accionesP1).not.toContain(
       'ELEGIR_CARTA_DESEMPATE' as unknown as TrucAction,
     );
   });
