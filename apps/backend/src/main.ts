@@ -52,6 +52,7 @@ interface Room {
   actor: AnyActorRef;
   actorSubscription: { unsubscribe: () => void };
   playerIds: string[]; // human players
+  playerNames: Record<string, string>;
   botIds: string[]; // bot player IDs
   bots: TrucBot[]; // bot instances (for cleanup)
   botCount: number;
@@ -86,6 +87,11 @@ function getRoomSummary(room: Room): RoomSummary {
     maxPlayers: 4,
     status: room.status,
   };
+}
+
+function normalizePlayerName(name: string, fallback: string) {
+  const trimmed = name.trim();
+  return trimmed || fallback;
 }
 
 function getGamePhase(snapshot: {
@@ -136,6 +142,7 @@ function emitStateToRoom(roomUid: string, actor: AnyActorRef) {
               allowedActions,
               board,
               allPlayerIds,
+              room.playerNames,
               phase,
             );
             console.log(
@@ -156,6 +163,7 @@ function emitInitialState(
   playerId: string,
   actor: AnyActorRef,
   allPlayerIds: string[],
+  playerNames: Record<string, string>,
 ) {
   const snapshot = actor.getSnapshot();
   const context = snapshot.context as TrucContext;
@@ -168,6 +176,7 @@ function emitInitialState(
     allowedActions,
     board,
     allPlayerIds,
+    playerNames,
     phase,
   );
   socket.emit('game:state-update', sanitized);
@@ -231,6 +240,7 @@ function createRoom(name: string, botCount: number): Room {
     actor,
     actorSubscription,
     playerIds: [],
+    playerNames: {},
     botIds: [],
     bots: [],
     botCount: 0,
@@ -247,6 +257,7 @@ function createRoom(name: string, botCount: number): Room {
     room.bots.push(bot);
     room.botIds.push(botId);
     room.botCount++;
+    room.playerNames[botId] = `Bot ${i}`;
   }
 
   return room;
@@ -292,27 +303,35 @@ io.on('connection', (socket: TrucSocket) => {
   socket.emit('rooms:list', Array.from(rooms.values()).map(getRoomSummary));
 
   // ----- Create room -----
-  socket.on('room:create', ({ name, bots = 0, playerId }, callback) => {
-    const roomName = name?.trim() || `Sala ${rooms.size + 1}`;
-    const botCount = Math.max(0, Math.min(3, bots));
+  socket.on(
+    'room:create',
+    ({ name, bots = 0, playerId, playerName }, callback) => {
+      const roomName = name?.trim() || `Sala ${rooms.size + 1}`;
+      const botCount = Math.max(0, Math.min(3, bots));
+      const displayName = normalizePlayerName(playerName, 'Jugador 1');
 
-    const room = createRoom(roomName, botCount);
-    room.playerIds.push(playerId);
+      const room = createRoom(roomName, botCount);
+      room.playerIds.push(playerId);
+      room.playerNames[playerId] = displayName;
 
-    socket.playerId = playerId;
-    socket.roomUid = room.uid;
-    socket.join(room.uid);
+      socket.playerId = playerId;
+      socket.roomUid = room.uid;
+      socket.join(room.uid);
 
-    callback({ status: 'ok', room: getRoomSummary(room) });
-    broadcastRoomsList();
-    emitInitialState(socket, playerId, room.actor, [
-      ...room.playerIds,
-      ...room.botIds,
-    ]);
-  });
+      callback({ status: 'ok', room: getRoomSummary(room) });
+      broadcastRoomsList();
+      emitInitialState(
+        socket,
+        playerId,
+        room.actor,
+        [...room.playerIds, ...room.botIds],
+        room.playerNames,
+      );
+    },
+  );
 
   // ----- Join room -----
-  socket.on('room:join', ({ uid, playerId }, callback) => {
+  socket.on('room:join', ({ uid, playerId, playerName }, callback) => {
     const room = rooms.get(uid);
 
     if (!room) {
@@ -321,6 +340,7 @@ io.on('connection', (socket: TrucSocket) => {
     }
 
     const isRejoining = room.playerIds.includes(playerId);
+    const displayName = normalizePlayerName(playerName, 'Jugador');
 
     if (!isRejoining) {
       const totalOccupied = room.playerIds.length + room.botCount;
@@ -331,16 +351,21 @@ io.on('connection', (socket: TrucSocket) => {
       room.playerIds.push(playerId);
     }
 
+    room.playerNames[playerId] = displayName;
+
     socket.playerId = playerId;
     socket.roomUid = uid;
     socket.join(uid);
 
     callback({ status: 'ok', room: getRoomSummary(room) });
     broadcastRoomsList();
-    emitInitialState(socket, playerId, room.actor, [
-      ...room.playerIds,
-      ...room.botIds,
-    ]);
+    emitInitialState(
+      socket,
+      playerId,
+      room.actor,
+      [...room.playerIds, ...room.botIds],
+      room.playerNames,
+    );
   });
 
   // ----- Game action -----

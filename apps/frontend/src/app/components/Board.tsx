@@ -17,10 +17,11 @@ import { BoardTable } from './board/BoardTable';
 import { BoardActionArea } from './board/BoardActionArea';
 import { BoardHand } from './board/BoardHand';
 
-export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
-  roomUid,
-  playerId,
-}) => {
+export const Board: React.FC<{
+  roomUid: string;
+  playerId: string;
+  playerName: string;
+}> = ({ roomUid, playerId, playerName }) => {
   const navigate = useNavigate();
   const {
     gameState,
@@ -31,7 +32,7 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
     connectionStatus,
     roomError,
     clearError,
-  } = useTrucSocket(roomUid, playerId);
+  } = useTrucSocket(roomUid, playerId, playerName);
 
   const isLobby = sessionPhase === 'lobby';
   const canDeal =

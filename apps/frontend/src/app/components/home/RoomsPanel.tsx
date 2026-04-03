@@ -6,7 +6,7 @@ import { useI18n } from '../../i18n/useI18n';
 interface RoomsPanelProps {
   rooms: RoomSummary[];
   onCreateRoom: () => void;
-  onJoinRoom: (uid: string) => void;
+  onJoinRoom: (room: RoomSummary) => void;
 }
 
 export const RoomsPanel: React.FC<RoomsPanelProps> = ({
@@ -74,7 +74,7 @@ export const RoomsPanel: React.FC<RoomsPanelProps> = ({
                   </p>
                 </div>
                 <button
-                  onClick={() => onJoinRoom(room.uid)}
+                  onClick={() => onJoinRoom(room)}
                   type="button"
                   data-qa={`home-join-room-${room.uid}`}
                   disabled={room.playerCount >= room.maxPlayers}
