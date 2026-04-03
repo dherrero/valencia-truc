@@ -6,8 +6,9 @@ test('happy path con 3 bots y 2 rondas', async ({ page }) => {
   await page.goto('/');
 
   await click(page.locator('[data-qa="home-create-room-button"]'));
+  await page.locator('[data-qa="create-room-player-name"]').fill('Juan');
   await click(page.locator('[data-qa="create-room-bots-3"]'));
-  await page.locator('input[type="text"]').fill(roomName);
+  await page.locator('[data-qa="create-room-name"]').fill(roomName);
   await click(page.locator('[data-qa="create-room-confirm-button"]'));
 
   await page.waitForURL(/\/partida\/.+/);

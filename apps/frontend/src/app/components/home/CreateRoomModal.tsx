@@ -4,10 +4,12 @@ import { useI18n } from '../../i18n/useI18n';
 
 interface CreateRoomModalProps {
   open: boolean;
+  playerName: string;
   roomName: string;
   botCount: number;
   roomsCount: number;
   creating: boolean;
+  onPlayerNameChange: (value: string) => void;
   onRoomNameChange: (value: string) => void;
   onBotCountChange: (value: number) => void;
   onClose: () => void;
@@ -16,10 +18,12 @@ interface CreateRoomModalProps {
 
 export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   open,
+  playerName,
   roomName,
   botCount,
   roomsCount,
   creating,
+  onPlayerNameChange,
   onRoomNameChange,
   onBotCountChange,
   onClose,
@@ -50,6 +54,18 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
             <h3 className="text-2xl font-black mb-6">{t('home.newRoom')}</h3>
 
             <label className="block text-emerald-300 text-sm font-semibold mb-1">
+              {t('home.playerName')}
+            </label>
+            <input
+              type="text"
+              value={playerName}
+              onChange={(e) => onPlayerNameChange(e.target.value)}
+              placeholder={t('home.playerNamePlaceholder')}
+              data-qa="create-room-player-name"
+              className="w-full bg-emerald-900 border border-emerald-700 rounded-xl px-4 py-3 text-white placeholder-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-5"
+            />
+
+            <label className="block text-emerald-300 text-sm font-semibold mb-1">
               {t('home.roomName')}
             </label>
             <input
@@ -59,6 +75,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               placeholder={t('home.roomPlaceholder', {
                 number: roomsCount + 1,
               })}
+              data-qa="create-room-name"
               className="w-full bg-emerald-900 border border-emerald-700 rounded-xl px-4 py-3 text-white placeholder-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-6"
             />
 
@@ -96,7 +113,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               <button
                 type="button"
                 onClick={onCreate}
-                disabled={creating}
+                disabled={creating || !playerName.trim()}
                 data-qa="create-room-confirm-button"
                 className="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-black transition-colors disabled:opacity-50"
               >

@@ -26,6 +26,7 @@ export function sanitizeGameState(
   allowedActions: TrucAction[],
   board: Card[],
   allPlayerIds: string[] = [],
+  playerNames: Record<string, string> = {},
   phase: 'lobby' | 'playing' | 'roundSummary' = 'playing',
 ): GameStateUpdate {
   const myCards = context.cartasJugadores?.[playerId] ?? [];
@@ -47,8 +48,17 @@ export function sanitizeGameState(
     // Partner is at offset 2 (diagonal)
     const isPartner = offset === 2;
     const position = positions[offset - 1];
+    const displayName =
+      playerNames[otherId] ??
+      (otherId.startsWith('bot-') ? `Bot ${offset}` : `Jugador ${offset}`);
 
-    otherPlayers.push({ playerId: otherId, cardCount, isPartner, position });
+    otherPlayers.push({
+      playerId: otherId,
+      displayName,
+      cardCount,
+      isPartner,
+      position,
+    });
   }
 
   // Pad to 3 seats if fewer than 4 players
@@ -56,6 +66,7 @@ export function sanitizeGameState(
     const pos = positions[otherPlayers.length];
     otherPlayers.push({
       playerId: '',
+      displayName: '',
       cardCount: 0,
       isPartner: otherPlayers.length === 1,
       position: pos,

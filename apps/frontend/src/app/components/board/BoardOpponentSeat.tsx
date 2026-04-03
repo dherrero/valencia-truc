@@ -16,9 +16,7 @@ export const BoardOpponentSeat: React.FC<BoardOpponentSeatProps> = ({
   isMano,
 }) => {
   const { t } = useI18n();
-  const name = seat.playerId.startsWith('bot-')
-    ? `🤖 ${t('board.bot')}`
-    : `👤 ${seat.playerId.slice(0, 8)}…`;
+  const name = seat.displayName || '…';
   const backs = Array.from({ length: seat.cardCount });
 
   return (
@@ -40,12 +38,7 @@ export const BoardOpponentSeat: React.FC<BoardOpponentSeatProps> = ({
             <AnimatePresence>
               {backs.length > 0 ? (
                 backs.map((_, i) => (
-                  <div
-                    key={i}
-                    className={
-                      seat.playerId.startsWith('bot-') ? '-rotate-90' : ''
-                    }
-                  >
+                  <div key={i} className="-rotate-90 origin-center">
                     <CardBack delay={i * 0.08} />
                   </div>
                 ))

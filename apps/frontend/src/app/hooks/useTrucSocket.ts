@@ -21,7 +21,11 @@ function inferPhase(
   return (state.hand?.length ?? 0) > 0 ? 'playing' : 'lobby';
 }
 
-export function useTrucSocket(roomUid: string, playerId: string) {
+export function useTrucSocket(
+  roomUid: string,
+  playerId: string,
+  playerName: string,
+) {
   const { t } = useI18n();
   const [socket, setSocket] = useState<Socket<
     ServerToClientEvents,
@@ -45,11 +49,15 @@ export function useTrucSocket(roomUid: string, playerId: string) {
     newSocket.on('connect', () => {
       setConnectionStatus('connected');
       // Join the specific room by UID
-      newSocket.emit('room:join', { uid: roomUid, playerId }, (res) => {
-        if (res.status === 'error') {
-          setRoomError(res.message || t('socket.roomConnectError'));
-        }
-      });
+      newSocket.emit(
+        'room:join',
+        { uid: roomUid, playerId, playerName },
+        (res) => {
+          if (res.status === 'error') {
+            setRoomError(res.message || t('socket.roomConnectError'));
+          }
+        },
+      );
     });
 
     newSocket.on('game:state-update', (state) => {
@@ -118,7 +126,7 @@ export function useTrucSocket(roomUid: string, playerId: string) {
       newSocket.off('game:over');
       newSocket.disconnect();
     };
-  }, [roomUid, playerId]);
+  }, [roomUid, playerId, playerName]);
 
   const sendAction = useCallback(
     (action: TrucAction | string, payload?: unknown) => {
