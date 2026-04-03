@@ -8,7 +8,10 @@ test('la sala de espera oculta el reparto hasta completar 4 jugadores', async ({
   await page.locator('[data-qa="home-create-room-button"]').evaluate((el) => {
     (el as HTMLElement).click();
   });
-  await page.locator('input[type="text"]').fill(`Sala sin bots ${Date.now()}`);
+  await page.locator('[data-qa="create-room-player-name"]').fill('Ana');
+  await page
+    .locator('[data-qa="create-room-name"]')
+    .fill(`Sala sin bots ${Date.now()}`);
   await page
     .locator('[data-qa="create-room-confirm-button"]')
     .evaluate((el) => {

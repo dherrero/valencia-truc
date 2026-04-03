@@ -54,6 +54,7 @@ export const JoinRoomModal: React.FC<JoinRoomModalProps> = ({
               value={playerName}
               onChange={(e) => onPlayerNameChange(e.target.value)}
               placeholder={t('home.playerNamePlaceholder')}
+              data-qa="join-room-player-name"
               className="w-full bg-emerald-900 border border-emerald-700 rounded-xl px-4 py-3 text-white placeholder-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-8"
             />
 

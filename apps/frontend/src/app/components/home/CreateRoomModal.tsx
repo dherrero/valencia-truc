@@ -61,6 +61,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               value={playerName}
               onChange={(e) => onPlayerNameChange(e.target.value)}
               placeholder={t('home.playerNamePlaceholder')}
+              data-qa="create-room-player-name"
               className="w-full bg-emerald-900 border border-emerald-700 rounded-xl px-4 py-3 text-white placeholder-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-5"
             />
 
@@ -74,6 +75,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               placeholder={t('home.roomPlaceholder', {
                 number: roomsCount + 1,
               })}
+              data-qa="create-room-name"
               className="w-full bg-emerald-900 border border-emerald-700 rounded-xl px-4 py-3 text-white placeholder-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-6"
             />
 
