@@ -6,12 +6,12 @@ Este es un monorepo gestionado con **Nx** para un videojuego del 'Truc Valencià
 
 - **Frontend:** React + Tailwind CSS (`apps/frontend`)
 - **Backend:** Node.js + Socket.io (`apps/backend`)
-- **Lógica Compartida:** Librería de TypeScript pura (`libs/shared-logic`)
-- **Contratos/Tipos:** Interfaces compartidas (`libs/shared-types`)
+- **Lógica Compartida:** Librería de TypeScript pura (`libs/shared/game-engine`)
+- **Contratos/Tipos:** Interfaces compartidas (`libs/shared/interfaces`)
 
 ## Reglas de Oro del Desarrollo
 
-1. **Single Source of Truth:** Toda la lógica de validación de jugadas (envido, truco, jerarquía de cartas) DEBE residir en `libs/shared-logic`. Nunca dupliques lógica en el frontend o backend.
+1. **Single Source of Truth:** Toda la lógica de validación de jugadas (envido, truco, jerarquía de cartas) DEBE residir en `libs/shared/game-engine`. Nunca dupliques lógica en el frontend o backend.
 2. **TypeScript Estricto:** Prohibido el uso de `any`. Usa Type Guards y Discriminated Unions para los estados del juego.
 3. **Flujo de Nx:** - Para crear componentes: `nx generate @nx/react:component...`
    - Para nuevas librerías: `nx generate @nx/js:library...`

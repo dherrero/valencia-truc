@@ -1,0 +1,5 @@
+{
+  "gamestate": "{\"board\":[],\"hand\":[],\"score\":{\"equipo1\":0,\"equipo2\":0},\"phase\":\"lobby\",\"allowedActions\":[\"REPARTIR\"],\"actionLog\":[],\"cartasRival\":0,\"otherPlayers\":[{\"playerId\":\"bot-75d12502-1\",\"cardCount\":0,\"isPartner\":false,\"position\":\"right\"},{\"playerId\":\"bot-75d12502-2\",\"cardCount\":0,\"isPartner\":true,\"position\":\"top\"},{\"playerId\":\"bot-75d12502-3\",\"cardCount\":0,\"isPartner\":false,\"position\":\"left\"}],\"myTeam\":\"equipo1\",\"turnoActual\":\"\",\"manoOriginal\":\"\",\"cartasEnMesa\":[],\"bazaResults\":[]}",
+  "uid": "75d12502-a4e9-477a-9529-ef7be64a0dd1",
+  "player": "player-b40fcbe6-d5f3-4adc-a4a0-c88d7122ed61"
+}

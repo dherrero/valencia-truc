@@ -1,0 +1,347 @@
+export type Language = 'ca' | 'es';
+
+type TranslationValue = string | TranslationTree;
+type TranslationTree = { [key: string]: TranslationValue };
+
+export const translations: Record<Language, TranslationTree> = {
+  ca: {
+    app: {
+      name: 'Truc Valencia',
+    },
+    header: {
+      language: 'Idioma actiu',
+      valencian: 'Valencià',
+      spanish: 'Castella',
+      rules: 'Regles',
+      home: 'Inici',
+    },
+    home: {
+      connected: 'Connectat al servidor',
+      connecting: 'Connectant...',
+      activeRooms: 'Partides actives',
+      createRoom: 'Crear sala',
+      noRooms: 'No hi ha partides actives. Crea la primera!',
+      players: 'jugadors',
+      bot: 'bot',
+      bots: 'bots',
+      statusPlaying: 'En joc',
+      statusWaiting: 'Esperant',
+      full: 'Plena',
+      join: 'Unir-se',
+      newRoom: 'Nova sala',
+      roomName: 'Nom de la sala',
+      roomPlaceholder: 'Sala {number}',
+      rivalBots: 'Bots rivals',
+      cancel: 'Cancelar',
+      creating: 'Creant...',
+      create: 'Crear',
+      createRoomError: 'Error al crear la sala',
+      joinRoomError: 'Error al unir-se a la sala',
+    },
+    rules: {
+      title: 'Regles del Truc Valencià',
+      intro:
+        'Resum rapid de les regles principals per entendre el funcionament de la partida.',
+      objectiveTitle: 'Objectiu',
+      objectiveBody:
+        'Lobjectiu es guanyar la cama arribant a 24 pedres. Es juga per parelles i cada ronda reparteix tres cartes per jugador.',
+      deckTitle: 'Mazo i jerarquia',
+      deckBody:
+        'Es juga amb 22 cartes. No entren els dosos, vuits, nous ni figures. La jerarquia principal es: as despases, as de bastos, set despases, set doros, tresos, sets falsos, sisos, cincos i quatres.',
+      roundTitle: 'Com va una ronda',
+      roundBody:
+        'Cada jugador tira una carta per torn. Qui guanya la baza ix primer en la seguent. La primera parella que guanya dos bases guanya la ronda. Si la primera baza empata, es passen a jugar directament les dues seguents.',
+      trucTitle: 'El truc',
+      trucBody:
+        'El truc es una aposta sobre la ronda. Es pot cantar durant la ronda i la resposta pot ser vull, no vull, retruc, vale quatre o joc fora.',
+      envidoTitle: 'Lenvido',
+      envidoBody:
+        'Lenvido nomes es pot cantar en la primera ma i sempre abans del truc. Guanya qui te millor combinacio de dos cartes del mateix pal. Si ningú lliga pal, compta la carta mes alta.',
+      hiddenTitle: 'Cartes tapades',
+      hiddenBody:
+        'Per ara no fem servir la mecànica de cartes tapades en el desempate. El joc continua amb les cartes normals i el lenvido segueix sense comptar les cartes ocultes.',
+    },
+    board: {
+      connecting: 'Connectant al servidor...',
+      disconnected: 'Desconnectat',
+      victory: 'Victoria!',
+      defeat: 'Derrota!',
+      winners: 'Guanya',
+      us: 'Nosaltres',
+      rivals: 'Rivals',
+      backLobby: 'Tornar al lobby',
+      newGame: 'Iniciar partida nova',
+      finalSummary: 'Resum final',
+      waitingPlayers: 'Esperant jugadors...',
+      dealCards: 'Repartir cartes',
+      partner: 'Company',
+      rival: 'Rival',
+      bot: 'Bot',
+      table: 'Taula',
+      emptySeat: 'Sense cartes',
+      manoTitle: 'ma de la partida',
+      chooseUpCard: 'Tria la carta descoberta',
+      yourTurn: 'Es el teu torn',
+      yourCards: 'Les teues cartes',
+      roundEnd: 'Final de ronda',
+      roundSummary: 'Resum de pedres',
+      because: 'Per que',
+      score: 'Marcador',
+      nextRound: 'Seguent ronda',
+      summaryLine: '{team} guanya {points} pedra{suffix} per {reason}',
+    },
+    socket: {
+      roomConnectError: 'No sha pogut connectar a la partida.',
+      actionError: 'Error en enviar la accio.',
+    },
+    scoreboard: {
+      title: 'Puntuacio actual',
+      bazas: 'Bazas',
+      rival: 'Rivals',
+      us: 'Nosaltres',
+    },
+    activeBet: {
+      title: 'Aposta activa',
+      waiting: 'Esperant resposta',
+      active: 'Aposta en joc',
+      fullGame: 'Joc complet',
+      stones: 'pedres',
+      envido: 'Envido',
+      tornaCho: 'Torna-cho',
+      truc: 'Truc',
+      retruc: 'Retruc',
+      valeQuatre: 'Vale quatre',
+      juegoFuera: 'Joc fora',
+    },
+    log: {
+      title: 'Historial',
+      latest: 'Ultimes 6',
+      table: 'La taula',
+      you: 'Tu',
+      bot: 'Bot',
+      player: 'Jugador',
+      deal: 'Nova ronda repartida',
+      truc: '{actor} canta truc',
+      retruc: '{actor} canta retruc',
+      valeQuatre: '{actor} canta vale quatre',
+      juegoFuera: '{actor} canta joc fora',
+      envido: '{actor} canta envido',
+      tornaCho: '{actor} diu torna-cho',
+      quiero: '{actor} diu vull',
+      noQuiero: '{actor} no vol',
+      playCard: '{actor} tira carta',
+      tieBreaker: '{actor} tria descoberta',
+    },
+    actions: {
+      repartir: 'Repartir',
+      truc: 'Truc',
+      retruc: 'Retruco',
+      valeQuatre: 'Vale quatre',
+      juegoFuera: 'Joc fora',
+      envido: 'Envido',
+      tornaCho: 'Torna-cho',
+      quiero: 'Vull',
+      noQuiero: 'No vull',
+    },
+    summaryReasons: {
+      'envido-accepted': 'envido volgut',
+      'envido-rejected': 'envido no volgut',
+      'torna-cho-accepted': 'torna-cho volgut',
+      'torna-cho-rejected': 'torna-cho no volgut',
+      'truc-won': 'truc guanyat',
+      'truc-rejected': 'truc no volgut',
+      'retruc-won': 'retruc guanyat',
+      'retruc-rejected': 'retruc no volgut',
+      'vale-quatre-won': 'vale quatre guanyat',
+      'vale-quatre-rejected': 'vale quatre no volgut',
+      'juego-fuera-won': 'joc fora guanyat',
+      'juego-fuera-rejected': 'joc fora no volgut',
+    },
+  },
+  es: {
+    app: {
+      name: 'Truc Valenciano',
+    },
+    header: {
+      language: 'Idioma activo',
+      valencian: 'Valenciano',
+      spanish: 'Castellano',
+      rules: 'Reglas',
+      home: 'Inicio',
+    },
+    home: {
+      connected: 'Conectado al servidor',
+      connecting: 'Conectando...',
+      activeRooms: 'Partidas activas',
+      createRoom: 'Crear sala',
+      noRooms: 'No hay partidas activas. Crea la primera.',
+      players: 'jugadores',
+      bot: 'bot',
+      bots: 'bots',
+      statusPlaying: 'En juego',
+      statusWaiting: 'Esperando',
+      full: 'Llena',
+      join: 'Unirse',
+      newRoom: 'Nueva sala',
+      roomName: 'Nombre de la sala',
+      roomPlaceholder: 'Sala {number}',
+      rivalBots: 'Bots rivales',
+      cancel: 'Cancelar',
+      creating: 'Creando...',
+      create: 'Crear',
+      createRoomError: 'Error al crear la sala',
+      joinRoomError: 'Error al unirse a la sala',
+    },
+    rules: {
+      title: 'Reglas del Truc Valenciano',
+      intro:
+        'Resumen rapido de las reglas principales para entender el funcionamiento de la partida.',
+      objectiveTitle: 'Objetivo',
+      objectiveBody:
+        'El objetivo es ganar la cama llegando a 24 piedras. Se juega por parejas y cada ronda reparte tres cartas por jugador.',
+      deckTitle: 'Mazo y jerarquia',
+      deckBody:
+        'Se juega con 22 cartas. No entran los doses, ochos, nueves ni figuras. La jerarquia principal es: as de espadas, as de bastos, siete de espadas, siete de oros, treses, sietes falsos, seises, cincos y cuatros.',
+      roundTitle: 'Como va una ronda',
+      roundBody:
+        'Cada jugador tira una carta por turno. Quien gana la baza sale primero en la siguiente. La primera pareja que gana dos bazas gana la ronda. Si la primera baza empata, se juegan directamente las dos siguientes.',
+      trucTitle: 'El truco',
+      trucBody:
+        'El truco es una apuesta sobre la ronda. Se puede cantar durante la ronda y la respuesta puede ser quiero, no quiero, retruco, vale cuatro o juego fuera.',
+      envidoTitle: 'El envido',
+      envidoBody:
+        'El envido solo se puede cantar en la primera mano y siempre antes del truco. Gana quien tiene mejor combinacion de dos cartas del mismo palo. Si nadie liga palo, cuenta la carta mas alta.',
+      hiddenTitle: 'Cartas tapadas',
+      hiddenBody:
+        'Por ahora no usamos la mecanica de cartas tapadas en el desempate. La partida sigue con cartas normales y el envido sigue sin contar las cartas ocultas.',
+    },
+    board: {
+      connecting: 'Conectando al servidor...',
+      disconnected: 'Desconectado',
+      victory: 'Victoria!',
+      defeat: 'Derrota!',
+      winners: 'Gana',
+      us: 'Nosotros',
+      rivals: 'Rivales',
+      backLobby: 'Volver al lobby',
+      newGame: 'Iniciar partida nueva',
+      finalSummary: 'Resumen final',
+      waitingPlayers: 'Esperando jugadores...',
+      dealCards: 'Repartir cartas',
+      partner: 'Compañero',
+      rival: 'Rival',
+      bot: 'Bot',
+      table: 'Mesa',
+      emptySeat: 'Sin cartas',
+      manoTitle: 'mano de la partida',
+      chooseUpCard: 'Elige la carta descubierta',
+      yourTurn: 'Es tu turno',
+      yourCards: 'Tus cartas',
+      roundEnd: 'Fin de ronda',
+      roundSummary: 'Resumen de piedras',
+      because: 'Por que',
+      score: 'Marcador',
+      nextRound: 'Siguiente ronda',
+      summaryLine: '{team} gana {points} piedra{suffix} por {reason}',
+    },
+    socket: {
+      roomConnectError: 'No se ha podido conectar a la partida.',
+      actionError: 'Error al enviar la accion.',
+    },
+    scoreboard: {
+      title: 'Puntuacion actual',
+      bazas: 'Bazas',
+      rival: 'Rivales',
+      us: 'Nosotros',
+    },
+    activeBet: {
+      title: 'Apuesta activa',
+      waiting: 'Esperando respuesta',
+      active: 'Apuesta en juego',
+      fullGame: 'Partida completa',
+      stones: 'piedras',
+      envido: 'Envido',
+      tornaCho: 'Torna-cho',
+      truc: 'Truco',
+      retruc: 'Retruco',
+      valeQuatre: 'Vale cuatro',
+      juegoFuera: 'Juego fuera',
+    },
+    log: {
+      title: 'Historial',
+      latest: 'Ultimas 6',
+      table: 'La mesa',
+      you: 'Tu',
+      bot: 'Bot',
+      player: 'Jugador',
+      deal: 'Nueva ronda repartida',
+      truc: '{actor} canta truco',
+      retruc: '{actor} canta retruco',
+      valeQuatre: '{actor} canta vale cuatro',
+      juegoFuera: '{actor} canta juego fuera',
+      envido: '{actor} canta envido',
+      tornaCho: '{actor} dice torna-cho',
+      quiero: '{actor} dice quiero',
+      noQuiero: '{actor} no quiere',
+      playCard: '{actor} tira carta',
+      tieBreaker: '{actor} elige descubierta',
+    },
+    actions: {
+      repartir: 'Repartir',
+      truc: 'Truco',
+      retruc: 'Retruco',
+      valeQuatre: 'Vale cuatro',
+      juegoFuera: 'Juego fuera',
+      envido: 'Envido',
+      tornaCho: 'Torna-cho',
+      quiero: 'Quiero',
+      noQuiero: 'No quiero',
+    },
+    summaryReasons: {
+      'envido-accepted': 'envido querido',
+      'envido-rejected': 'envido no querido',
+      'torna-cho-accepted': 'torna-cho querido',
+      'torna-cho-rejected': 'torna-cho no querido',
+      'truc-won': 'truco ganado',
+      'truc-rejected': 'truco no querido',
+      'retruc-won': 'retruco ganado',
+      'retruc-rejected': 'retruco no querido',
+      'vale-quatre-won': 'vale cuatro ganado',
+      'vale-quatre-rejected': 'vale cuatro no querido',
+      'juego-fuera-won': 'juego fuera ganado',
+      'juego-fuera-rejected': 'juego fuera no querido',
+    },
+  },
+};
+
+export function getTranslationValue(
+  language: Language,
+  key: string,
+): TranslationValue | undefined {
+  return key
+    .split('.')
+    .reduce<TranslationValue | undefined>((current, part) => {
+      if (
+        typeof current !== 'object' ||
+        current == null ||
+        !(part in current)
+      ) {
+        return undefined;
+      }
+
+      return current[part] as TranslationValue;
+    }, translations[language]);
+}
+
+export function interpolate(
+  value: string,
+  params?: Record<string, string | number>,
+) {
+  if (!params) return value;
+
+  return Object.entries(params).reduce(
+    (result, [key, replacement]) =>
+      result.split(`{${key}}`).join(String(replacement)),
+    value,
+  );
+}

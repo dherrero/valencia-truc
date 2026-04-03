@@ -1,5 +1,13 @@
-import { TrucAction, GameStateUpdate, PlayerSeat, Card } from '@valencia-truc/shared-interfaces';
-import { TrucContext } from '@valencia-truc/shared-game-engine';
+import {
+  TrucAction,
+  GameStateUpdate,
+  PlayerSeat,
+  Card,
+} from '@valencia-truc/shared-interfaces';
+import {
+  getActiveBetState,
+  TrucContext,
+} from '@valencia-truc/shared-game-engine';
 
 /**
  * Sanitizes the XState context for a specific player.
@@ -17,7 +25,8 @@ export function sanitizeGameState(
   playerId: string,
   allowedActions: TrucAction[],
   board: Card[],
-  allPlayerIds: string[] = []
+  allPlayerIds: string[] = [],
+  phase: 'lobby' | 'playing' | 'roundSummary' = 'playing',
 ): GameStateUpdate {
   const myCards = context.cartasJugadores?.[playerId] ?? [];
 
@@ -25,6 +34,7 @@ export function sanitizeGameState(
   // allPlayerIds order is: [creator, p1, p2, p3] (seat indices 0-3)
   const totalPlayers = allPlayerIds.length;
   const myIndex = allPlayerIds.indexOf(playerId);
+  const myTeam = myIndex % 2 === 0 ? 'equipo1' : 'equipo2';
 
   const positions: Array<'right' | 'top' | 'left'> = ['right', 'top', 'left'];
   const otherPlayers: PlayerSeat[] = [];
@@ -44,23 +54,34 @@ export function sanitizeGameState(
   // Pad to 3 seats if fewer than 4 players
   while (otherPlayers.length < 3) {
     const pos = positions[otherPlayers.length];
-    otherPlayers.push({ playerId: '', cardCount: 0, isPartner: otherPlayers.length === 1, position: pos });
+    otherPlayers.push({
+      playerId: '',
+      cardCount: 0,
+      isPartner: otherPlayers.length === 1,
+      position: pos,
+    });
   }
 
   // First rival for backwards compat
-  const firstRival = otherPlayers.find(p => !p.isPartner);
+  const firstRival = otherPlayers.find((p) => !p.isPartner);
   const cartasRival = firstRival?.cardCount ?? 0;
 
   return {
     board,
     hand: myCards,
     score: context.puntuacionCama,
+    phase,
     allowedActions,
+    actionLog: context.historialAcciones,
+    activeBet: getActiveBetState({ context } as never),
+    roundSummary: context.resumenRonda ?? undefined,
     cartasRival,
     otherPlayers,
+    myTeam,
     turnoActual: context.turnoActual,
     manoOriginal: context.manoOriginal,
     // Eliminamos 'board' nativo y enviamos 'cartasEnMesa' (frontend usará cartasEnMesa o mapeará)
     cartasEnMesa: context.cartasEnMesa || [],
+    bazaResults: context.historialBazas,
   };
 }
