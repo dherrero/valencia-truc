@@ -7,7 +7,7 @@ import {
   RoomSummary,
 } from '@valencia-truc/shared-interfaces';
 import { Snackbar, Alert } from '@mui/material';
-import { useI18n } from '../i18n/LanguageProvider';
+import { useI18n } from '../i18n/useI18n';
 import { LanguageHeader } from '../components/LanguageHeader';
 import { HomeHeader } from '../components/home/HomeHeader';
 import { RoomsPanel } from '../components/home/RoomsPanel';

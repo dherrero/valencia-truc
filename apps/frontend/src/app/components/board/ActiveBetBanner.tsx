@@ -1,6 +1,6 @@
 import React from 'react';
 import { ActiveBetState } from '@valencia-truc/shared-interfaces';
-import { useI18n } from '../../i18n/LanguageProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 interface ActiveBetBannerProps {
   activeBet?: ActiveBetState;
@@ -35,6 +35,7 @@ export const ActiveBetBanner: React.FC<ActiveBetBannerProps> = ({
   return (
     <div className="fixed top-4 right-4 z-40">
       <div
+        data-qa="active-bet-banner"
         className={`min-w-56 rounded-2xl border px-4 py-3 text-center shadow-xl backdrop-blur-sm ${palette}`}
       >
         <p className="text-[10px] font-bold uppercase tracking-[0.25em] opacity-80">

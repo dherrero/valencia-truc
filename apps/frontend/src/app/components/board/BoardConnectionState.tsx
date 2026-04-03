@@ -1,5 +1,5 @@
 import React from 'react';
-import { useI18n } from '../../i18n/LanguageProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 interface BoardConnectionStateProps {
   status: 'connecting' | 'disconnected' | 'error';

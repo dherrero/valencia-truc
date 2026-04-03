@@ -1,21 +1,15 @@
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import React, { createContext, useEffect, useMemo, useState } from 'react';
 import { Language, getTranslationValue, interpolate } from './translations';
 
 const STORAGE_KEY = 'truc_language';
 
-interface LanguageContextValue {
+export interface LanguageContextValue {
   language: Language;
   setLanguage: (language: Language) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
 }
 
-const LanguageContext = createContext<LanguageContextValue | null>(null);
+export const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -51,12 +45,3 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
     </LanguageContext.Provider>
   );
 };
-
-export function useI18n() {
-  const context = useContext(LanguageContext);
-  if (!context) {
-    throw new Error('useI18n must be used inside LanguageProvider');
-  }
-
-  return context;
-}

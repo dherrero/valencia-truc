@@ -17,12 +17,20 @@ function getCardSpriteClass(card: CardType): string {
   return `card-sprite card-${card.value}-${suit}`;
 }
 
-export const Card: React.FC<CardProps> = ({ card, isPlayable = false, isPlayed = false, className, onClick }) => {
+export const Card: React.FC<CardProps> = ({
+  card,
+  isPlayable = false,
+  isPlayed = false,
+  className,
+  onClick,
+}) => {
   const spriteClass = getCardSpriteClass(card);
 
   return (
     <motion.div
       onClick={isPlayable ? onClick : undefined}
+      data-qa={`hand-card-${card.suit.toLowerCase()}-${card.value}`}
+      data-qa-playable={isPlayable ? 'true' : 'false'}
       initial={isPlayed ? false : { y: 100, opacity: 0 }}
       animate={{ y: 0, opacity: 1, scale: isPlayed ? 1 : 1.1 }}
       whileHover={isPlayable ? { scale: 1.2, y: -14 } : {}}
@@ -30,9 +38,10 @@ export const Card: React.FC<CardProps> = ({ card, isPlayable = false, isPlayed =
       className={clsx(
         spriteClass,
         'shadow-xl cursor-default flex-shrink-0',
-        isPlayable && 'cursor-pointer hover:shadow-2xl ring-2 ring-transparent hover:ring-blue-400 transition-all',
+        isPlayable &&
+          'cursor-pointer hover:shadow-2xl ring-2 ring-transparent hover:ring-blue-400 transition-all',
         isPlayed && 'opacity-70',
-        className
+        className,
       )}
     />
   );

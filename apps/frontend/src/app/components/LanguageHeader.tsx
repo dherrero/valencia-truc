@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useI18n } from '../i18n/LanguageProvider';
+import { useI18n } from '../i18n/useI18n';
 
 interface LanguageHeaderProps {
   showRulesLink?: boolean;
@@ -27,6 +27,7 @@ export const LanguageHeader: React.FC<LanguageHeaderProps> = ({
         <button
           type="button"
           onClick={() => setLanguage('ca')}
+          data-qa="language-switch-ca"
           className={`px-3 py-2 text-xs font-black uppercase tracking-[0.18em] ${language === 'ca' ? 'bg-emerald-500 text-white' : 'bg-transparent text-emerald-200'}`}
         >
           VAL
@@ -34,6 +35,7 @@ export const LanguageHeader: React.FC<LanguageHeaderProps> = ({
         <button
           type="button"
           onClick={() => setLanguage('es')}
+          data-qa="language-switch-es"
           className={`px-3 py-2 text-xs font-black uppercase tracking-[0.18em] ${language === 'es' ? 'bg-emerald-500 text-white' : 'bg-transparent text-emerald-200'}`}
         >
           ES
@@ -42,6 +44,7 @@ export const LanguageHeader: React.FC<LanguageHeaderProps> = ({
       {showRulesLink && (
         <Link
           to="/reglas"
+          data-qa="nav-rules-link"
           className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-emerald-100 transition-colors hover:bg-white/20"
         >
           {t('header.rules')}
@@ -50,6 +53,7 @@ export const LanguageHeader: React.FC<LanguageHeaderProps> = ({
       {showHomeLink && (
         <Link
           to="/"
+          data-qa="nav-home-link"
           className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-emerald-100 transition-colors hover:bg-white/20"
         >
           {t('header.home')}

@@ -2,7 +2,7 @@ import React from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Card as CardComponent } from '../Card';
 import { Card, TrucAction } from '@valencia-truc/shared-interfaces';
-import { useI18n } from '../../i18n/LanguageProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 interface BoardHandProps {
   hand: Card[];

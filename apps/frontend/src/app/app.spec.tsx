@@ -24,6 +24,6 @@ describe('App', () => {
         </LanguageProvider>
       </BrowserRouter>,
     );
-    expect(getByText(/Truc Valencia/i)).toBeTruthy();
+    expect(getByText(/Truc Valencià/i)).toBeTruthy();
   });
 });

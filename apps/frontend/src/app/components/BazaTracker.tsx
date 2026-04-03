@@ -1,6 +1,6 @@
 import React from 'react';
 import clsx from 'clsx';
-import { useI18n } from '../i18n/LanguageProvider';
+import { useI18n } from '../i18n/useI18n';
 
 interface BazaTrackerProps {
   results: Array<'equipo1' | 'equipo2' | 'empate'>;

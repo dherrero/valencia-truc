@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { LanguageHeader } from '../components/LanguageHeader';
-import { useI18n } from '../i18n/LanguageProvider';
+import { useI18n } from '../i18n/useI18n';
 
 const sectionKeys = [
   'objective',

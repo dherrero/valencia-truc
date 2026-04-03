@@ -6,7 +6,7 @@ type TranslationTree = { [key: string]: TranslationValue };
 export const translations: Record<Language, TranslationTree> = {
   ca: {
     app: {
-      name: 'Truc Valencia',
+      name: 'Truc Valencià',
     },
     header: {
       language: 'Idioma actiu',

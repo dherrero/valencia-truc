@@ -2,7 +2,7 @@ import React from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { PlayerSeat } from '@valencia-truc/shared-interfaces';
 import { CardBack } from '../CardBack';
-import { useI18n } from '../../i18n/LanguageProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 interface BoardSeatProps {
   seat: PlayerSeat;
