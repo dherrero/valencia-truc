@@ -69,7 +69,10 @@ export const BoardLobbyScreen: React.FC<BoardLobbyScreenProps> = ({
             {t('board.dealCards')}
           </motion.button>
         ) : (
-          <p className="text-emerald-500 animate-pulse text-lg">
+          <p
+            className="text-emerald-500 animate-pulse text-lg"
+            data-qa="board-waiting-players"
+          >
             {t('board.waitingPlayers')}
           </p>
         )}

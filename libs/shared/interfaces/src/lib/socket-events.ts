@@ -64,6 +64,7 @@ export interface GameStateUpdate {
   roundSummary?: RoundSummary;
   cartasRival: number; // kept for backwards compat (first rival)
   otherPlayers: PlayerSeat[]; // all other 3 seats (right, top, left)
+  totalPlayers: number;
   myTeam: 'equipo1' | 'equipo2';
   turnoActual?: string;
   manoOriginal?: string;

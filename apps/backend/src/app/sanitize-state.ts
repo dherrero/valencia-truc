@@ -77,6 +77,7 @@ export function sanitizeGameState(
     roundSummary: context.resumenRonda ?? undefined,
     cartasRival,
     otherPlayers,
+    totalPlayers,
     myTeam,
     turnoActual: context.turnoActual,
     manoOriginal: context.manoOriginal,

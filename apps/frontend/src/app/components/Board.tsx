@@ -35,7 +35,9 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
 
   const isLobby = sessionPhase === 'lobby';
   const canDeal =
-    gameState?.allowedActions.includes(TrucAction.REPARTIR) ?? false;
+    (gameState?.phase === 'lobby' || isLobby) &&
+    (gameState?.totalPlayers ?? 0) === 4 &&
+    (gameState?.allowedActions.includes(TrucAction.REPARTIR) ?? false);
   const canPlayCard =
     gameState?.allowedActions.includes(TrucAction.JUGAR_CARTA) ?? false;
   const roundSummary = gameState?.roundSummary;
@@ -62,7 +64,10 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
   return (
     <div className="fixed inset-0 bg-emerald-900 overflow-hidden select-none">
       <div className="absolute top-4 left-4 z-30 flex items-start gap-3">
-        <ScoreBoard score={gameState?.score || { equipo1: 0, equipo2: 0 }} />
+        <ScoreBoard
+          score={gameState?.score || { equipo1: 0, equipo2: 0 }}
+          myTeam={gameState?.myTeam ?? 'equipo1'}
+        />
         <BazaTracker
           results={gameState?.bazaResults ?? []}
           myTeam={gameState?.myTeam ?? 'equipo1'}
