@@ -1,7 +1,7 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { RoomSummary } from '@valencia-truc/shared-interfaces';
-import { useI18n } from '../../i18n/LanguageProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 interface RoomsPanelProps {
   rooms: RoomSummary[];
@@ -24,6 +24,8 @@ export const RoomsPanel: React.FC<RoomsPanelProps> = ({
         </h2>
         <button
           onClick={onCreateRoom}
+          type="button"
+          data-qa="home-create-room-button"
           className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-xl transition-colors shadow-lg"
         >
           + {t('home.createRoom')}
@@ -73,6 +75,8 @@ export const RoomsPanel: React.FC<RoomsPanelProps> = ({
                 </div>
                 <button
                   onClick={() => onJoinRoom(room.uid)}
+                  type="button"
+                  data-qa={`home-join-room-${room.uid}`}
                   disabled={room.playerCount >= room.maxPlayers}
                   className="px-5 py-2 rounded-xl font-bold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-emerald-600 hover:bg-emerald-500 text-white"
                 >

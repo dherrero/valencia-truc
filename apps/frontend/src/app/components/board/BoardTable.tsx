@@ -2,7 +2,7 @@ import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Card as CardComponent } from '../Card';
 import { Card } from '@valencia-truc/shared-interfaces';
-import { useI18n } from '../../i18n/LanguageProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 interface BoardTableProps {
   cards: Array<{ jugadorId: string; carta: Card }>;

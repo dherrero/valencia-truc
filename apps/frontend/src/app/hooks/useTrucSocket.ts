@@ -7,7 +7,7 @@ import {
   GameStateUpdate,
   TrucAction,
 } from '@valencia-truc/shared-interfaces';
-import { useI18n } from '../i18n/LanguageProvider';
+import { useI18n } from '../i18n/useI18n';
 
 const SOCKET_URL = 'http://localhost:3333';
 const GAMESTATE_KEY = 'truc_gamestate';

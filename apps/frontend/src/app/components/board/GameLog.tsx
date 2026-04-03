@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ActionLogEntry } from '@valencia-truc/shared-interfaces';
-import { useI18n } from '../../i18n/LanguageProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 interface GameLogProps {
   entries: ActionLogEntry[];
@@ -63,6 +63,7 @@ export const GameLog: React.FC<GameLogProps> = ({ entries, playerId }) => {
       <button
         type="button"
         onClick={() => setIsCollapsed((current) => !current)}
+        data-qa="game-log-toggle-button"
         className="flex w-full items-center justify-between rounded-xl px-1 py-1 text-left"
       >
         <div>

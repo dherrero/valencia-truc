@@ -13,7 +13,10 @@ export const BoardActionArea: React.FC<BoardActionAreaProps> = ({
   onAction,
 }) => {
   return (
-    <div className="absolute bottom-6 left-4 z-20 max-w-[min(420px,calc(100vw-2rem))]">
+    <div
+      className="absolute bottom-6 left-4 z-20 max-w-[min(420px,calc(100vw-2rem))]"
+      data-qa="board-action-area"
+    >
       <AnimatePresence>
         {(allowedActions.length > 0 &&
           !allowedActions.includes(TrucAction.REPARTIR) && (

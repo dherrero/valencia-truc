@@ -1,6 +1,6 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useI18n } from '../../i18n/LanguageProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 interface CreateRoomModalProps {
   open: boolean;
@@ -44,6 +44,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
+            data-qa="create-room-modal"
             className="bg-emerald-950 border border-emerald-700 rounded-3xl p-8 w-full max-w-md shadow-2xl"
           >
             <h3 className="text-2xl font-black mb-6">{t('home.newRoom')}</h3>
@@ -68,8 +69,10 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
             <div className="flex gap-2 mb-8">
               {[0, 1, 2, 3].map((n) => (
                 <button
+                  type="button"
                   key={n}
                   onClick={() => onBotCountChange(n)}
+                  data-qa={`create-room-bots-${n}`}
                   className={`flex-1 py-3 rounded-xl font-bold text-lg transition-all ${
                     botCount === n
                       ? 'bg-emerald-500 text-white shadow-lg'
@@ -83,14 +86,18 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
             <div className="flex gap-3">
               <button
+                type="button"
                 onClick={onClose}
+                data-qa="create-room-cancel-button"
                 className="flex-1 py-3 rounded-xl bg-emerald-900 text-emerald-400 hover:bg-emerald-800 font-bold transition-colors"
               >
                 {t('home.cancel')}
               </button>
               <button
+                type="button"
                 onClick={onCreate}
                 disabled={creating}
+                data-qa="create-room-confirm-button"
                 className="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-black transition-colors disabled:opacity-50"
               >
                 {creating ? t('home.creating') : t('home.create')}
