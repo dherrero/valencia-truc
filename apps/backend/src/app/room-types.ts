@@ -14,4 +14,6 @@ export interface Room {
   status: 'waiting' | 'playing';
   emitDebounce: ReturnType<typeof setTimeout> | null;
   autoDealTimeout: ReturnType<typeof setTimeout> | null;
+  disconnectTimers: Map<string, ReturnType<typeof setTimeout>>;
+  disconnectedPlayerIds: Set<string>;
 }

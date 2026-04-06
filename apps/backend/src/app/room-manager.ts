@@ -5,7 +5,11 @@ import {
   TrucContext,
   TrucEvent,
 } from '@valencia-truc/shared-game-engine';
-import { GameOverState } from '@valencia-truc/shared-interfaces';
+import {
+  GameOverState,
+  RoomDestroyedState,
+  RoomNoticeState,
+} from '@valencia-truc/shared-interfaces';
 import type { GameServer } from './socket-types';
 import type { Room } from './room-types';
 import { getRoomSummary } from './room-utils';
@@ -15,9 +19,10 @@ import { TrucBot } from './bot';
 export interface RoomManager {
   rooms: Map<string, Room>;
   createRoom: (name: string, botCount: number) => Room;
-  destroyRoom: (uid: string) => void;
+  destroyRoom: (uid: string, payload?: Partial<RoomDestroyedState>) => void;
   broadcastRoomsList: () => void;
   listRooms: () => ReturnType<typeof getRoomSummary>[];
+  emitRoomNotice: (uid: string, notice: RoomNoticeState) => void;
   emitInitialState: (
     socket: Parameters<typeof emitInitialState>[0],
     playerId: string,
@@ -35,11 +40,21 @@ function getRondaState(value: unknown) {
 export function createRoomManager(io: GameServer): RoomManager {
   const rooms = new Map<string, Room>();
 
+  function clearDisconnectTimers(room: Room) {
+    room.disconnectTimers.forEach((timer) => clearTimeout(timer));
+    room.disconnectTimers.clear();
+    room.disconnectedPlayerIds.clear();
+  }
+
   function broadcastRoomsList() {
     io.emit('rooms:list', Array.from(rooms.values()).map(getRoomSummary));
   }
 
-  function destroyRoom(uid: string) {
+  function emitRoomNotice(uid: string, notice: RoomNoticeState) {
+    io.in(uid).emit('room:notice', notice);
+  }
+
+  function destroyRoom(uid: string, payload: Partial<RoomDestroyedState> = {}) {
     const room = rooms.get(uid);
     if (!room) return;
 
@@ -47,11 +62,15 @@ export function createRoomManager(io: GameServer): RoomManager {
 
     if (room.emitDebounce) clearTimeout(room.emitDebounce);
     if (room.autoDealTimeout) clearTimeout(room.autoDealTimeout);
+    clearDisconnectTimers(room);
 
     room.actorSubscription.unsubscribe();
     room.actor.stop();
 
-    io.in(uid).emit('room:destroyed', `La sala "${room.name}" ha finalizado.`);
+    io.in(uid).emit('room:destroyed', {
+      reason: payload.reason ?? 'manual',
+      message: payload.message ?? `La sala "${room.name}" ha finalizado.`,
+    });
     io.in(uid).socketsLeave(uid);
     rooms.delete(uid);
     broadcastRoomsList();
@@ -75,6 +94,8 @@ export function createRoomManager(io: GameServer): RoomManager {
       status: 'waiting',
       emitDebounce: null,
       autoDealTimeout: null,
+      disconnectTimers: new Map(),
+      disconnectedPlayerIds: new Set(),
     };
 
     rooms.set(uid, room);
@@ -140,6 +161,7 @@ export function createRoomManager(io: GameServer): RoomManager {
     destroyRoom,
     broadcastRoomsList,
     listRooms: () => Array.from(rooms.values()).map(getRoomSummary),
+    emitRoomNotice,
     emitInitialState: (
       socket: Parameters<typeof emitInitialState>[0],
       playerId: string,

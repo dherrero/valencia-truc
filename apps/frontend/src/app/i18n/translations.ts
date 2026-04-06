@@ -94,10 +94,20 @@ export const translations: Record<Language, TranslationTree> = {
       score: 'Marcador',
       nextRound: 'Seguent ronda',
       summaryLine: '{team} guanya {points} pedra{suffix} per {reason}',
+      roomEnded: 'Partida finalitzada',
+      returningHome: 'Tornant al lobby...',
     },
     socket: {
       roomConnectError: 'No sha pogut connectar a la partida.',
       actionError: 'Error en enviar la accio.',
+    },
+    room: {
+      disconnected:
+        'El usuario {playerName}, ha abandonado la sala. Se darán {minutes} minutos de cortesía.',
+      reconnected: 'El usuario {playerName} ha vuelto a la sala.',
+      ended: 'La partida se ha cerrado por abandono. Todos volverán al inicio.',
+      timeout:
+        'El usuario {playerName} no ha vuelto a tiempo. La partida concluye y todos vuelven al inicio.',
     },
     scoreboard: {
       title: 'Puntuacio actual',
@@ -253,10 +263,20 @@ export const translations: Record<Language, TranslationTree> = {
       score: 'Marcador',
       nextRound: 'Siguiente ronda',
       summaryLine: '{team} gana {points} piedra{suffix} por {reason}',
+      roomEnded: 'Partida finalizada',
+      returningHome: 'Volviendo al lobby...',
     },
     socket: {
       roomConnectError: 'No se ha podido conectar a la partida.',
       actionError: 'Error al enviar la accion.',
+    },
+    room: {
+      disconnected:
+        'El usuario {playerName}, ha abandonado la sala. Se darán {minutes} minutos de cortesía.',
+      reconnected: 'El usuario {playerName} ha vuelto a la sala.',
+      ended: 'La partida se ha cerrado por abandono. Todos volverán al inicio.',
+      timeout:
+        'El usuario {playerName} no ha vuelto a tiempo. La partida concluye y todos vuelven al inicio.',
     },
     scoreboard: {
       title: 'Puntuacion actual',

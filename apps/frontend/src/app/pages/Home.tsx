@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 import {
   ClientToServerEvents,
@@ -18,6 +18,7 @@ const SOCKET_URL = 'http://localhost:3333';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useI18n();
   const socketRef = useRef<Socket<
     ServerToClientEvents,
@@ -34,10 +35,19 @@ const Home: React.FC = () => {
   const [joining, setJoining] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<RoomSummary | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [roomMsg, setRoomMsg] = useState<string | null>(null);
 
   useEffect(() => {
     setPlayerName(localStorage.getItem('truc_name') ?? '');
   }, []);
+
+  useEffect(() => {
+    const state = location.state as { roomNotice?: string } | null;
+    if (state?.roomNotice) {
+      setRoomMsg(state.roomNotice);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
     const socket: Socket<ServerToClientEvents, ClientToServerEvents> =
@@ -209,6 +219,22 @@ const Home: React.FC = () => {
           sx={{ width: '100%' }}
         >
           {errorMsg}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar
+        open={!!roomMsg}
+        autoHideDuration={6000}
+        onClose={() => setRoomMsg(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setRoomMsg(null)}
+          severity="warning"
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {roomMsg}
         </Alert>
       </Snackbar>
     </div>

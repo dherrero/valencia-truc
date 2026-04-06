@@ -6,6 +6,8 @@ import {
   ServerToClientEvents,
   GameStateUpdate,
   TrucAction,
+  RoomNoticeState,
+  RoomDestroyedState,
 } from '@valencia-truc/shared-interfaces';
 import { useI18n } from '../i18n/useI18n';
 
@@ -33,6 +35,10 @@ export function useTrucSocket(
   > | null>(null);
   const [gameState, setGameState] = useState<GameStateUpdate | null>(null);
   const [gameOver, setGameOver] = useState<GameOverState | null>(null);
+  const [roomNotice, setRoomNotice] = useState<RoomNoticeState | null>(null);
+  const [roomDestroyed, setRoomDestroyed] = useState<RoomDestroyedState | null>(
+    null,
+  );
   const [sessionPhase, setSessionPhase] = useState<
     'lobby' | 'playing' | 'roundSummary' | 'gameOver'
   >('lobby');
@@ -78,11 +84,19 @@ export function useTrucSocket(
       localStorage.setItem(GAMESTATE_ROOM_KEY, roomUid);
     });
 
-    newSocket.on('room:destroyed', () => {
+    newSocket.on('room:notice', (notice) => {
+      setRoomNotice(notice);
+    });
+
+    newSocket.on('room:destroyed', (payload) => {
       setConnectionStatus('disconnected');
       setGameState(null);
       setSessionPhase('lobby');
       hasGameStartedRef.current = false;
+      setRoomDestroyed(payload);
+      if (payload.reason === 'manual') {
+        setRoomNotice(null);
+      }
       localStorage.removeItem('truc_uid');
       localStorage.removeItem('truc_player');
       localStorage.removeItem(GAMESTATE_KEY);
@@ -120,6 +134,7 @@ export function useTrucSocket(
     return () => {
       newSocket.off('connect');
       newSocket.off('game:state-update');
+      newSocket.off('room:notice');
       newSocket.off('room:destroyed');
       newSocket.off('disconnect');
       newSocket.off('connect_error');
@@ -168,6 +183,9 @@ export function useTrucSocket(
     destroyRoom,
     connectionStatus,
     roomError,
+    roomNotice,
+    roomDestroyed,
     clearError: () => setRoomError(null),
+    clearRoomNotice: () => setRoomNotice(null),
   };
 }

@@ -79,6 +79,17 @@ export interface GameOverState {
   summary?: RoundSummary;
 }
 
+export interface RoomNoticeState {
+  kind: 'player-disconnected' | 'player-reconnected';
+  playerName: string;
+  gracePeriodMs?: number;
+}
+
+export interface RoomDestroyedState {
+  reason: 'manual' | 'abandonment';
+  message: string;
+}
+
 export interface RoomSummary {
   uid: string;
   name: string;
@@ -121,7 +132,8 @@ export interface ClientToServerEvents {
 
 export interface ServerToClientEvents {
   'rooms:list': (rooms: RoomSummary[]) => void;
-  'room:destroyed': (message: string) => void;
+  'room:notice': (notice: RoomNoticeState) => void;
+  'room:destroyed': (payload: RoomDestroyedState) => void;
   'game:state-update': (state: GameStateUpdate) => void;
   'game:over': (data: GameOverState) => void;
 }

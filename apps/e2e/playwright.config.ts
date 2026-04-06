@@ -1,5 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
+process.env.ROOM_DISCONNECT_GRACE_PERIOD_MS ??= '1000';
+
 export default defineConfig({
   testDir: './src',
   fullyParallel: false,

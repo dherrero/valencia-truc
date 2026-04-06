@@ -13,6 +13,13 @@ import {
 import type { GameSocketData, TrucSocket } from './socket-types';
 import type { RoomManager } from './room-manager';
 
+function getDisconnectGracePeriodMs() {
+  const parsed = Number(process.env.ROOM_DISCONNECT_GRACE_PERIOD_MS);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 5 * 60 * 1000;
+}
+
+const DISCONNECT_GRACE_PERIOD_MS = getDisconnectGracePeriodMs();
+
 export function registerSocketHandlers(
   io: Server<ClientToServerEvents, ServerToClientEvents, never, GameSocketData>,
   roomManager: RoomManager,
@@ -64,6 +71,17 @@ export function registerSocketHandlers(
       }
 
       room.playerNames[playerId] = displayName;
+
+      const pendingDisconnect = room.disconnectTimers.get(playerId);
+      if (pendingDisconnect) {
+        clearTimeout(pendingDisconnect);
+        room.disconnectTimers.delete(playerId);
+        room.disconnectedPlayerIds.delete(playerId);
+        roomManager.emitRoomNotice(uid, {
+          kind: 'player-reconnected',
+          playerName: displayName,
+        });
+      }
 
       socket.data.playerId = playerId;
       socket.data.roomUid = uid;
@@ -145,24 +163,47 @@ export function registerSocketHandlers(
       const room = roomManager.rooms.get(uid);
       if (!room) return;
 
-      room.playerIds = room.playerIds.filter(
-        (id) => id !== socket.data.playerId,
-      );
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
 
-      if (room.playerIds.length === 0 && room.botCount === 0) {
-        setTimeout(() => {
-          const currentRoom = roomManager.rooms.get(uid);
-          if (
-            currentRoom &&
-            currentRoom.playerIds.length === 0 &&
-            currentRoom.botCount === 0
-          ) {
-            roomManager.destroyRoom(uid);
-          }
-        }, 10000);
-      } else {
-        roomManager.broadcastRoomsList();
+      if (room.disconnectedPlayerIds.has(playerId)) {
+        return;
       }
+
+      if (room.disconnectedPlayerIds.size > 0) {
+        const playerName = room.playerNames[playerId] ?? 'Jugador';
+        roomManager.destroyRoom(uid, {
+          reason: 'abandonment',
+          message: `El usuario ${playerName} ha abandonado la sala. La partida concluye y todos vuelven al inicio.`,
+        });
+        return;
+      }
+
+      room.disconnectedPlayerIds.add(playerId);
+      roomManager.emitRoomNotice(uid, {
+        kind: 'player-disconnected',
+        playerName: room.playerNames[playerId] ?? 'Jugador',
+        gracePeriodMs: DISCONNECT_GRACE_PERIOD_MS,
+      });
+
+      const timeout = setTimeout(() => {
+        room.disconnectTimers.delete(playerId);
+        room.disconnectedPlayerIds.delete(playerId);
+
+        if (!roomManager.rooms.has(uid)) {
+          return;
+        }
+
+        const currentRoom = roomManager.rooms.get(uid);
+        if (!currentRoom) return;
+
+        roomManager.destroyRoom(uid, {
+          reason: 'abandonment',
+          message: `El usuario ${room.playerNames[playerId] ?? 'Jugador'} no ha vuelto a tiempo. La partida concluye y todos vuelven al inicio.`,
+        });
+      }, DISCONNECT_GRACE_PERIOD_MS);
+
+      room.disconnectTimers.set(playerId, timeout);
     });
   });
 }
