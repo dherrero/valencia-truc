@@ -33,11 +33,9 @@ export const ActiveBetBanner: React.FC<ActiveBetBannerProps> = ({
       : 'border-sky-400/70 bg-sky-500/15 text-sky-100';
 
   return (
-    <div className="fixed top-4 right-4 z-40">
-      <div
-        data-qa="active-bet-banner"
-        className={`min-w-56 rounded-2xl border px-4 py-3 text-center shadow-xl backdrop-blur-sm ${palette}`}
-      >
+    <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-40">
+      {/* Desktop: full card */}
+      <div className={`hidden sm:block min-w-56 rounded-2xl border px-4 py-3 text-center shadow-xl backdrop-blur-sm ${palette}`}>
         <p className="text-[10px] font-bold uppercase tracking-[0.25em] opacity-80">
           {t('activeBet.title')}
         </p>
@@ -51,6 +49,16 @@ export const ActiveBetBanner: React.FC<ActiveBetBannerProps> = ({
           {activeBet.waitingResponse
             ? t('activeBet.waiting')
             : t('activeBet.active')}
+        </p>
+      </div>
+
+      {/* Mobile: compact chip */}
+      <div className={`sm:hidden rounded-xl border px-2 py-1 text-center shadow-lg backdrop-blur-sm ${palette}`}>
+        <p className="text-xs font-black uppercase leading-tight">{translatedLabel}</p>
+        <p className="text-[10px] opacity-80">
+          {activeBet.points === 24
+            ? t('activeBet.fullGame')
+            : `${activeBet.points} ${t('activeBet.stones')}`}
         </p>
       </div>
     </div>

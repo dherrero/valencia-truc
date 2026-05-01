@@ -23,6 +23,14 @@
   border-radius: 6px;
 }
 
+/* Scale cards down on mobile so 3 cards fit in a ~390px screen */
+@media (max-width: 639px) {
+  .card-sprite,
+  .card-reverso {
+    zoom: 0.63;
+  }
+}
+
 /* ---- REVERSO (fila 4, col 1) ---- */
 .card-reverso { background-position: -104px -636px; }
 

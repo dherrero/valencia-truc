@@ -9,7 +9,7 @@ import {
 } from '@valencia-truc/shared-interfaces';
 import { useI18n } from '../i18n/useI18n';
 
-const SOCKET_URL = 'http://localhost:3333';
+const SOCKET_URL = '';
 const GAMESTATE_KEY = 'truc_gamestate';
 const GAMESTATE_ROOM_KEY = 'truc_gamestate_room';
 

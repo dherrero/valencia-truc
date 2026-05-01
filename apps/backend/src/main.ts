@@ -23,11 +23,17 @@ const io = new Server<
   cors: { origin: '*' },
 });
 
+// Redis Setup
+setupRedisAdapter(io);
+
+// Room Manager
 const roomManager = createRoomManager(io);
 
+// HTTP Routes
 registerHttpRoutes(app, roomManager);
+
+// Socket Handlers
 registerSocketHandlers(io, roomManager);
-void setupRedisAdapter(io);
 
 const port = process.env.PORT || 3333;
 httpServer.listen(port, () => {

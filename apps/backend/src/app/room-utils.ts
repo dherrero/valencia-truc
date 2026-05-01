@@ -12,6 +12,7 @@ export const actionToEvent: Record<string, string> = {
   [TrucAction.JUEGO_FUERA]: 'JUEGO_FUERA',
   [TrucAction.ENVIDO]: 'CANTAR_ENVIDO',
   [TrucAction.TORNA_CHO]: 'TORNA_CHO',
+  [TrucAction.FALTA]: 'CANTAR_FALTA',
   [TrucAction.QUIERO]: 'QUIERO',
   [TrucAction.NO_QUIERO]: 'NO_QUIERO',
   [TrucAction.ELEGIR_CARTA_DESEMPATE]: 'ELEGIR_CARTA_DESEMPATE',

@@ -6,7 +6,9 @@ import {
 } from '@valencia-truc/shared-interfaces';
 import {
   getActiveBetState,
+  isDesempateActive,
   TrucContext,
+  CartaEnMesa,
 } from '@valencia-truc/shared-game-engine';
 
 /**
@@ -28,24 +30,25 @@ export function sanitizeGameState(
   allPlayerIds: string[] = [],
   playerNames: Record<string, string> = {},
   phase: 'lobby' | 'playing' | 'roundSummary' = 'playing',
+  snapshot?: { matches: (s: Record<string, string>) => boolean },
 ): GameStateUpdate {
   const myCards = context.cartasJugadores?.[playerId] ?? [];
 
   // Build ordered seated positions relative to this player
   // allPlayerIds order is: [creator, p1, p2, p3] (seat indices 0-3)
-  const totalPlayers = allPlayerIds.length;
   const myIndex = allPlayerIds.indexOf(playerId);
   const myTeam = myIndex % 2 === 0 ? 'equipo1' : 'equipo2';
 
   const positions: Array<'right' | 'top' | 'left'> = ['right', 'top', 'left'];
   const otherPlayers: PlayerSeat[] = [];
 
+  // Always use modulo 4 so physical seat positions are consistent regardless of
+  // how many players have joined. Wrapping on totalPlayers causes duplicates and
+  // self-references when fewer than 4 players are present.
   for (let offset = 1; offset <= 3; offset++) {
-    const seatIndex = (myIndex + offset) % totalPlayers;
-    const otherId = allPlayerIds[seatIndex] ?? `seat-${offset}`;
+    const seatIndex = (myIndex + offset) % 4;
+    const otherId = allPlayerIds[seatIndex] ?? '';
     const cardCount = context.cartasJugadores?.[otherId]?.length ?? 0;
-    // In 4-player Truc, pairs are (0,2) vs (1,3)
-    // Partner is at offset 2 (diagonal)
     const isPartner = offset === 2;
     const position = positions[offset - 1];
     const displayName =
@@ -61,39 +64,48 @@ export function sanitizeGameState(
     });
   }
 
-  // Pad to 3 seats if fewer than 4 players
-  while (otherPlayers.length < 3) {
-    const pos = positions[otherPlayers.length];
-    otherPlayers.push({
-      playerId: '',
-      displayName: '',
-      cardCount: 0,
-      isPartner: otherPlayers.length === 1,
-      position: pos,
-    });
-  }
-
   // First rival for backwards compat
   const firstRival = otherPlayers.find((p) => !p.isPartner);
   const cartasRival = firstRival?.cardCount ?? 0;
+
+  // Para tapadas (isOculta=true): el propio jugador ve su carta, los demás ven el dorso
+  const cartasEnMesa = (context.cartasEnMesa || []).map(
+    (entry: CartaEnMesa) => {
+      if (!entry.isOculta || entry.jugadorId === playerId) return entry;
+      // Ocultar carta tapada rival — enviar valor 0 / palo genérico como señal de dorso
+      return { jugadorId: entry.jugadorId, carta: entry.carta, isOculta: true };
+    },
+  );
+
+  const inDesempate = snapshot ? isDesempateActive(snapshot as never) : false;
+  const desempateSubmittedCount = Object.keys(
+    context.cartasDesempate ?? {},
+  ).length;
+
+  // Block REPARTIR until all 4 seats are filled
+  const filteredActions =
+    allPlayerIds.length < 4
+      ? allowedActions.filter((a) => a !== TrucAction.REPARTIR)
+      : allowedActions;
 
   return {
     board,
     hand: myCards,
     score: context.puntuacionCama,
     phase,
-    allowedActions,
+    allowedActions: filteredActions,
     actionLog: context.historialAcciones,
     activeBet: getActiveBetState({ context } as never),
     roundSummary: context.resumenRonda ?? undefined,
     cartasRival,
     otherPlayers,
-    totalPlayers,
+    totalPlayers: allPlayerIds.length,
     myTeam,
     turnoActual: context.turnoActual,
     manoOriginal: context.manoOriginal,
-    // Eliminamos 'board' nativo y enviamos 'cartasEnMesa' (frontend usará cartasEnMesa o mapeará)
-    cartasEnMesa: context.cartasEnMesa || [],
+    cartasEnMesa,
     bazaResults: context.historialBazas,
+    desempateSubmittedCount: inDesempate ? desempateSubmittedCount : undefined,
+    playerCount: allPlayerIds.length,
   };
 }

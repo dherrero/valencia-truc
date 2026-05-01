@@ -40,6 +40,10 @@ const actionConfig: Partial<
     labelKey: 'actions.tornaCho',
     color: 'bg-indigo-500 hover:bg-indigo-600 text-white',
   },
+  [TrucAction.FALTA]: {
+    labelKey: 'actions.falta',
+    color: 'bg-purple-600 hover:bg-purple-700 text-white',
+  },
   [TrucAction.QUIERO]: {
     labelKey: 'actions.quiero',
     color: 'bg-emerald-500 hover:bg-emerald-600 text-white',
@@ -57,7 +61,8 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
 }) => {
   const { t } = useI18n();
   const buttonsToRender = allowedActions.filter(
-    (a) => a !== TrucAction.JUGAR_CARTA,
+    (a) =>
+      a !== TrucAction.JUGAR_CARTA && a !== TrucAction.ELEGIR_CARTA_DESEMPATE,
   );
 
   if (buttonsToRender.length === 0) return null;
@@ -67,7 +72,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 50 }}
-      className="flex flex-wrap gap-3 justify-start items-center p-4 bg-black/40 rounded-2xl backdrop-blur-sm"
+      className="flex flex-wrap gap-2 sm:gap-3 justify-start items-center p-2 sm:p-4 bg-black/40 rounded-2xl backdrop-blur-sm"
     >
       {buttonsToRender.map((action) => {
         const config = actionConfig[action];
@@ -79,7 +84,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
             onClick={() => onAction(action)}
             data-qa={`action-${action.toLowerCase()}`}
             className={clsx(
-              'px-6 py-3 rounded-full font-bold text-lg border-2 border-transparent transition-all shadow-lg',
+              'px-3 py-2 sm:px-6 sm:py-3 rounded-full font-bold text-sm sm:text-lg border-2 border-transparent transition-all shadow-lg',
               'hover:scale-105 active:scale-95',
               config.color,
             )}

@@ -9,9 +9,9 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({ connected }) => {
   const { t } = useI18n();
 
   return (
-    <div className="text-center mb-12">
+    <div className="text-center mb-12 mt-16 sm:mt-0">
       <h1
-        className="text-6xl font-black mb-2"
+        className="text-5xl sm:text-6xl font-black mb-2"
         style={{ textShadow: '0 0 40px rgba(52,211,153,0.4)' }}
       >
         <span role="img" aria-label="Cartes">

@@ -14,7 +14,17 @@ import { RoomsPanel } from '../components/home/RoomsPanel';
 import { CreateRoomModal } from '../components/home/CreateRoomModal';
 import { JoinRoomModal } from '../components/home/JoinRoomModal';
 
-const SOCKET_URL = 'http://localhost:3333';
+const SOCKET_URL = '';
+
+function randomUUID(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -96,7 +106,7 @@ const Home: React.FC = () => {
     }
     setCreating(true);
     // Generate a stable ID BEFORE creating the room so it survives the socket reconnect
-    const playerId = `player-${crypto.randomUUID()}`;
+    const playerId = `player-${randomUUID()}`;
     localStorage.setItem('truc_player', playerId);
     localStorage.setItem('truc_name', trimmedName);
     socketRef.current.emit(
@@ -118,26 +128,16 @@ const Home: React.FC = () => {
         }
       },
     );
-  }, [botCount, navigate, playerName, roomName, t]);
+  }, [botCount, navigate, roomName, t]);
 
-  const handleJoin = useCallback(() => {
-    if (!socketRef.current || !selectedRoom) return;
-    const trimmedName = playerName.trim();
-    if (!trimmedName) {
-      setErrorMsg(t('home.nameRequired'));
-      return;
-    }
-
-    setJoining(true);
-    // Reuse existing playerId or generate a new stable one
-    const playerId =
-      localStorage.getItem('truc_player') ?? `player-${crypto.randomUUID()}`;
-    localStorage.setItem('truc_player', playerId);
-    localStorage.setItem('truc_name', trimmedName);
-    socketRef.current.emit(
-      'room:join',
-      { uid: selectedRoom.uid, playerId, playerName: trimmedName },
-      (res) => {
+  const handleJoin = useCallback(
+    (uid: string) => {
+      if (!socketRef.current) return;
+      // Reuse existing playerId or generate a new stable one
+      const playerId =
+        localStorage.getItem('truc_player') ?? `player-${randomUUID()}`;
+      localStorage.setItem('truc_player', playerId);
+      socketRef.current.emit('room:join', { uid, playerId }, (res) => {
         if (res.status === 'ok' && res.room) {
           localStorage.setItem('truc_uid', res.room.uid);
           socketRef.current?.disconnect();
