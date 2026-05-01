@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { CardBack } from '../CardBack';
-import { useI18n } from '../../i18n/LanguageProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 interface BoardLobbyScreenProps {
   canDeal: boolean;
@@ -61,7 +61,10 @@ export const BoardLobbyScreen: React.FC<BoardLobbyScreenProps> = ({
   };
 
   return (
-    <div className="flex items-center justify-center w-full h-screen bg-emerald-950 text-white overflow-hidden">
+    <div
+      className="flex items-center justify-center w-full h-screen bg-emerald-950 text-white overflow-hidden"
+      data-qa="board-lobby-screen"
+    >
       <div
         className="absolute inset-0 opacity-10"
         style={{
@@ -99,12 +102,14 @@ export const BoardLobbyScreen: React.FC<BoardLobbyScreenProps> = ({
 
         {canDeal ? (
           <motion.button
+            type="button"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onDeal}
+            data-qa="board-deal-button"
             className="mt-4 px-12 py-5 bg-emerald-500 hover:bg-emerald-400 text-white font-black text-2xl rounded-2xl shadow-2xl transition-colors"
             style={{ boxShadow: '0 0 40px rgba(52,211,153,0.4)' }}
           >

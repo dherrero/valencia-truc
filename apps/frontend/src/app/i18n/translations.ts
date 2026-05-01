@@ -6,7 +6,7 @@ type TranslationTree = { [key: string]: TranslationValue };
 export const translations: Record<Language, TranslationTree> = {
   ca: {
     app: {
-      name: 'Truc Valencia',
+      name: 'Truc Valencià',
     },
     header: {
       language: 'Idioma actiu',
@@ -29,14 +29,19 @@ export const translations: Record<Language, TranslationTree> = {
       full: 'Plena',
       join: 'Unir-se',
       newRoom: 'Nova sala',
+      joinRoom: 'Unir-se a la sala',
       roomName: 'Nom de la sala',
+      playerName: 'Nom del jugador',
+      playerNamePlaceholder: 'Introdueix el teu nom',
       roomPlaceholder: 'Sala {number}',
       rivalBots: 'Bots rivals',
       cancel: 'Cancelar',
       creating: 'Creant...',
+      joining: 'Unint...',
       create: 'Crear',
       createRoomError: 'Error al crear la sala',
       joinRoomError: 'Error al unir-se a la sala',
+      nameRequired: 'Introdueix un nom per continuar',
     },
     rules: {
       title: 'Regles del Truc Valencià',
@@ -102,7 +107,7 @@ export const translations: Record<Language, TranslationTree> = {
     },
     scoreboard: {
       title: 'Puntuacio actual',
-      bazas: 'Bazas',
+      bazas: 'Basas',
       rival: 'Rivals',
       us: 'Nosaltres',
     },
@@ -194,14 +199,19 @@ export const translations: Record<Language, TranslationTree> = {
       full: 'Llena',
       join: 'Unirse',
       newRoom: 'Nueva sala',
+      joinRoom: 'Unirse a la sala',
       roomName: 'Nombre de la sala',
+      playerName: 'Nombre del jugador',
+      playerNamePlaceholder: 'Introduce tu nombre',
       roomPlaceholder: 'Sala {number}',
       rivalBots: 'Bots rivales',
       cancel: 'Cancelar',
       creating: 'Creando...',
+      joining: 'Uniéndose...',
       create: 'Crear',
       createRoomError: 'Error al crear la sala',
       joinRoomError: 'Error al unirse a la sala',
+      nameRequired: 'Introduce un nombre para continuar',
     },
     rules: {
       title: 'Reglas del Truc Valenciano',

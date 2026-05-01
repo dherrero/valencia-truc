@@ -1,12 +1,19 @@
 import React from 'react';
-import { useI18n } from '../../i18n/LanguageProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 interface ScoreBoardProps {
   score: { equipo1: number; equipo2: number };
+  myTeam: 'equipo1' | 'equipo2';
 }
 
-export const ScoreBoard: React.FC<ScoreBoardProps> = ({ score }) => {
+export const ScoreBoard: React.FC<ScoreBoardProps> = ({ score, myTeam }) => {
   const { t } = useI18n();
+  const rivalTeam = myTeam === 'equipo1' ? 'equipo2' : 'equipo1';
+
+  const safeScore = {
+    equipo1: score.equipo1 || 0,
+    equipo2: score.equipo2 || 0,
+  };
 
   return (
     <div className="bg-black/45 p-2 sm:p-3 rounded-xl shadow-2xl backdrop-blur-md border border-emerald-700/50 sm:min-w-[180px]">

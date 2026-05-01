@@ -27,6 +27,7 @@ export function sanitizeGameState(
   allowedActions: TrucAction[],
   board: Card[],
   allPlayerIds: string[] = [],
+  playerNames: Record<string, string> = {},
   phase: 'lobby' | 'playing' | 'roundSummary' = 'playing',
   snapshot?: { matches: (s: Record<string, string>) => boolean },
 ): GameStateUpdate {
@@ -49,8 +50,17 @@ export function sanitizeGameState(
     const cardCount = context.cartasJugadores?.[otherId]?.length ?? 0;
     const isPartner = offset === 2;
     const position = positions[offset - 1];
+    const displayName =
+      playerNames[otherId] ??
+      (otherId.startsWith('bot-') ? `Bot ${offset}` : `Jugador ${offset}`);
 
-    otherPlayers.push({ playerId: otherId, cardCount, isPartner, position });
+    otherPlayers.push({
+      playerId: otherId,
+      displayName,
+      cardCount,
+      isPartner,
+      position,
+    });
   }
 
   // First rival for backwards compat
@@ -84,6 +94,7 @@ export function sanitizeGameState(
     roundSummary: context.resumenRonda ?? undefined,
     cartasRival,
     otherPlayers,
+    totalPlayers: allPlayerIds.length,
     myTeam,
     turnoActual: context.turnoActual,
     manoOriginal: context.manoOriginal,

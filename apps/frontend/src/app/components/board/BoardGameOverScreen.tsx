@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { RoundSummary } from '@valencia-truc/shared-interfaces';
-import { useI18n } from '../../i18n/LanguageProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 interface BoardGameOverScreenProps {
   winner: 'equipo1' | 'equipo2';
@@ -33,6 +33,7 @@ export const BoardGameOverScreen: React.FC<BoardGameOverScreenProps> = ({
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
+        data-qa="board-game-over-screen"
         className="relative z-10 flex flex-col items-center gap-6 text-center px-8"
       >
         <div className="text-8xl">{isEquipo1 ? '🏆' : '😔'}</div>
@@ -98,6 +99,7 @@ export const BoardGameOverScreen: React.FC<BoardGameOverScreenProps> = ({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={onNewGame}
+          data-qa="board-new-game-button"
           className="mt-4 px-10 py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-black text-xl rounded-2xl shadow-2xl transition-colors cursor-pointer"
         >
           {t('board.newGame')}

@@ -49,6 +49,7 @@ export enum TrucAction {
 
 export interface PlayerSeat {
   playerId: string;
+  displayName: string;
   cardCount: number;
   isPartner: boolean; // true = teammate, false = rival
   position: 'top' | 'right' | 'left';
@@ -65,6 +66,7 @@ export interface GameStateUpdate {
   roundSummary?: RoundSummary;
   cartasRival: number; // kept for backwards compat (first rival)
   otherPlayers: PlayerSeat[]; // all other 3 seats (right, top, left)
+  totalPlayers: number;
   myTeam: 'equipo1' | 'equipo2';
   turnoActual?: string;
   manoOriginal?: string;
@@ -91,7 +93,12 @@ export interface RoomSummary {
 
 export interface ClientToServerEvents {
   'room:create': (
-    payload: { name?: string; bots?: number; playerId: string },
+    payload: {
+      name?: string;
+      bots?: number;
+      playerId: string;
+      playerName: string;
+    },
     callback: (res: {
       status: 'ok' | 'error';
       message?: string;
@@ -99,7 +106,7 @@ export interface ClientToServerEvents {
     }) => void,
   ) => void;
   'room:join': (
-    payload: { uid: string; playerId: string },
+    payload: { uid: string; playerId: string; playerName: string },
     callback: (res: {
       status: 'ok' | 'error';
       message?: string;
