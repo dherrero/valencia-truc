@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ActionLogEntry } from '@valencia-truc/shared-interfaces';
-import { useI18n } from '../../i18n/LanguageProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 interface GameLogProps {
   entries: ActionLogEntry[];

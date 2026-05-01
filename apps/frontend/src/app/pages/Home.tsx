@@ -7,11 +7,12 @@ import {
   RoomSummary,
 } from '@valencia-truc/shared-interfaces';
 import { Snackbar, Alert } from '@mui/material';
-import { useI18n } from '../i18n/LanguageProvider';
+import { useI18n } from '../i18n/useI18n';
 import { LanguageHeader } from '../components/LanguageHeader';
 import { HomeHeader } from '../components/home/HomeHeader';
 import { RoomsPanel } from '../components/home/RoomsPanel';
 import { CreateRoomModal } from '../components/home/CreateRoomModal';
+import { JoinRoomModal } from '../components/home/JoinRoomModal';
 
 const SOCKET_URL = '';
 
@@ -35,10 +36,18 @@ const Home: React.FC = () => {
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [connected, setConnected] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [playerName, setPlayerName] = useState('');
   const [roomName, setRoomName] = useState('');
   const [botCount, setBotCount] = useState(0);
   const [creating, setCreating] = useState(false);
+  const [joining, setJoining] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState<RoomSummary | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPlayerName(localStorage.getItem('truc_name') ?? '');
+  }, []);
 
   useEffect(() => {
     const socket: Socket<ServerToClientEvents, ClientToServerEvents> =
@@ -55,11 +64,29 @@ const Home: React.FC = () => {
   }, []);
 
   const handleOpenCreateRoom = useCallback(() => {
+    setPlayerName(localStorage.getItem('truc_name') ?? '');
     setShowModal(true);
   }, []);
 
   const handleCloseCreateRoom = useCallback(() => {
     setShowModal(false);
+    setCreating(false);
+  }, []);
+
+  const handleOpenJoinRoom = useCallback((room: RoomSummary) => {
+    setSelectedRoom(room);
+    setPlayerName(localStorage.getItem('truc_name') ?? '');
+    setShowJoinModal(true);
+  }, []);
+
+  const handleCloseJoinRoom = useCallback(() => {
+    setShowJoinModal(false);
+    setSelectedRoom(null);
+    setJoining(false);
+  }, []);
+
+  const handlePlayerNameChange = useCallback((value: string) => {
+    setPlayerName(value);
   }, []);
 
   const handleRoomNameChange = useCallback((value: string) => {
@@ -72,16 +99,23 @@ const Home: React.FC = () => {
 
   const handleCreate = useCallback(() => {
     if (!socketRef.current) return;
+    const trimmedName = playerName.trim();
+    if (!trimmedName) {
+      setErrorMsg(t('home.nameRequired'));
+      return;
+    }
     setCreating(true);
     // Generate a stable ID BEFORE creating the room so it survives the socket reconnect
     const playerId = `player-${randomUUID()}`;
     localStorage.setItem('truc_player', playerId);
+    localStorage.setItem('truc_name', trimmedName);
     socketRef.current.emit(
       'room:create',
       {
         name: roomName.trim() || undefined,
         bots: botCount,
         playerId,
+        playerName: trimmedName,
       },
       (res) => {
         if (res.status === 'ok' && res.room) {
@@ -110,11 +144,11 @@ const Home: React.FC = () => {
           navigate(`/partida/${res.room.uid}`);
         } else {
           setErrorMsg(res.message || t('home.joinRoomError'));
+          setJoining(false);
         }
-      });
-    },
-    [navigate, t],
-  );
+      },
+    );
+  }, [navigate, playerName, selectedRoom, t]);
 
   return (
     <div className="min-h-screen bg-emerald-950 text-white flex flex-col items-center px-4 py-12">
@@ -134,20 +168,32 @@ const Home: React.FC = () => {
         <RoomsPanel
           rooms={rooms}
           onCreateRoom={handleOpenCreateRoom}
-          onJoinRoom={handleJoin}
+          onJoinRoom={handleOpenJoinRoom}
         />
       </div>
 
       <CreateRoomModal
         open={showModal}
+        playerName={playerName}
         roomName={roomName}
         botCount={botCount}
         roomsCount={rooms.length}
         creating={creating}
+        onPlayerNameChange={handlePlayerNameChange}
         onRoomNameChange={handleRoomNameChange}
         onBotCountChange={handleBotCountChange}
         onClose={handleCloseCreateRoom}
         onCreate={handleCreate}
+      />
+
+      <JoinRoomModal
+        open={showJoinModal}
+        roomName={selectedRoom?.name ?? ''}
+        playerName={playerName}
+        joining={joining}
+        onPlayerNameChange={handlePlayerNameChange}
+        onClose={handleCloseJoinRoom}
+        onJoin={handleJoin}
       />
 
       <Snackbar

@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { RoundSummary } from '@valencia-truc/shared-interfaces';
-import { useI18n } from '../../i18n/LanguageProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 interface BoardRoundSummaryModalProps {
   roundSummary: RoundSummary;
@@ -24,6 +24,7 @@ export const BoardRoundSummaryModal: React.FC<BoardRoundSummaryModalProps> = ({
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
+        data-qa="board-round-summary-modal"
         className="w-full max-w-md rounded-3xl border border-emerald-700/70 bg-emerald-950/95 p-6 text-white shadow-2xl backdrop-blur-sm"
       >
         <p className="text-xs font-bold uppercase tracking-[0.25em] text-emerald-300">
@@ -84,6 +85,7 @@ export const BoardRoundSummaryModal: React.FC<BoardRoundSummaryModalProps> = ({
           <button
             type="button"
             onClick={onNextRound}
+            data-qa="board-next-round-button"
             className="mt-5 w-full rounded-2xl bg-emerald-500 px-5 py-4 text-lg font-black text-white transition-colors hover:bg-emerald-400"
           >
             {t('board.nextRound')}

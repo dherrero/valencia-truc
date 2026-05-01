@@ -1,30 +1,25 @@
 import express from 'express';
 import { createServer } from 'http';
-import { Server, Socket } from 'socket.io';
-import { createAdapter } from '@socket.io/redis-adapter';
-import { createClient } from 'redis';
-import { createActor, AnyActorRef } from 'xstate';
-import { randomUUID } from 'crypto';
-import {
-  getAllowedActions,
-  trucMachine,
-  TrucContext,
-  TrucEvent,
-} from '@valencia-truc/shared-game-engine';
+import { Server } from 'socket.io';
 import {
   ClientToServerEvents,
-  GameOverState,
   ServerToClientEvents,
-  TrucAction,
-  RoomSummary,
 } from '@valencia-truc/shared-interfaces';
-import { sanitizeGameState } from './app/sanitize-state';
-import { TrucBot } from './app/bot';
+import { createRoomManager } from './app/room-manager';
+import { registerHttpRoutes } from './app/http-routes';
+import { registerSocketHandlers } from './app/socket-handlers';
+import { setupRedisAdapter } from './app/redis-adapter';
+import type { GameSocketData } from './app/socket-types';
 
 const app = express();
 app.use(express.json());
 const httpServer = createServer(app);
-const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
+const io = new Server<
+  ClientToServerEvents,
+  ServerToClientEvents,
+  never,
+  GameSocketData
+>(httpServer, {
   cors: { origin: '*' },
 });
 

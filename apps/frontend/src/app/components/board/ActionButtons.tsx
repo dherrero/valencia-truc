@@ -2,7 +2,7 @@ import React from 'react';
 import { TrucAction } from '@valencia-truc/shared-interfaces';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
-import { useI18n } from '../../i18n/LanguageProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 interface ActionButtonsProps {
   allowedActions: TrucAction[];
@@ -80,7 +80,9 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         return (
           <button
             key={action}
+            type="button"
             onClick={() => onAction(action)}
+            data-qa={`action-${action.toLowerCase()}`}
             className={clsx(
               'px-3 py-2 sm:px-6 sm:py-3 rounded-full font-bold text-sm sm:text-lg border-2 border-transparent transition-all shadow-lg',
               'hover:scale-105 active:scale-95',

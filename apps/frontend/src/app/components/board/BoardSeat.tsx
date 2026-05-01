@@ -2,7 +2,7 @@ import React from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { PlayerSeat } from '@valencia-truc/shared-interfaces';
 import { CardBack } from '../CardBack';
-import { useI18n } from '../../i18n/LanguageProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 interface BoardSeatProps {
   seat: PlayerSeat;
@@ -19,11 +19,7 @@ export const BoardSeat: React.FC<BoardSeatProps> = ({
   const label = seat.isPartner ? t('board.partner') : t('board.rival');
   const ringColor = seat.isPartner ? 'ring-blue-400/50' : 'ring-red-400/50';
   const textColor = seat.isPartner ? 'text-blue-300' : 'text-red-300';
-  const name = seat.playerId
-    ? seat.playerId.startsWith('bot-')
-      ? `🤖 ${t('board.bot')}`
-      : `👤 ${seat.playerId.slice(0, 8)}…`
-    : '…';
+  const name = seat.displayName || '…';
 
   const backs = Array.from({ length: seat.cardCount });
 
