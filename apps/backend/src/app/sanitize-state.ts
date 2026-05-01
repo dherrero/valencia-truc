@@ -8,6 +8,7 @@ import {
   getActiveBetState,
   isDesempateActive,
   TrucContext,
+  CartaEnMesa,
 } from '@valencia-truc/shared-game-engine';
 
 /**
@@ -69,7 +70,7 @@ export function sanitizeGameState(
 
   // Para tapadas (isOculta=true): el propio jugador ve su carta, los demás ven el dorso
   const cartasEnMesa = (context.cartasEnMesa || []).map(
-    (entry: { isOculta: any; jugadorId: string; carta: any }) => {
+    (entry: CartaEnMesa) => {
       if (!entry.isOculta || entry.jugadorId === playerId) return entry;
       // Ocultar carta tapada rival — enviar valor 0 / palo genérico como señal de dorso
       return { jugadorId: entry.jugadorId, carta: entry.carta, isOculta: true };

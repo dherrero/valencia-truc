@@ -19,7 +19,11 @@ type ResultadoBaza = Team | 'empate';
 type EstadoTruc = 'ninguno' | 'truc' | 'retruc' | 'vale_quatre' | 'juego_fuera';
 type EstadoEnvido = 'ninguno' | 'envido' | 'torna_cho' | 'falta';
 
-type CartaEnMesa = { jugadorId: string; carta: Card; isOculta?: boolean };
+export type CartaEnMesa = {
+  jugadorId: string;
+  carta: Card;
+  isOculta?: boolean;
+};
 
 type MachineSnapshot = SnapshotFrom<typeof trucMachine>;
 
@@ -928,7 +932,8 @@ export const trucMachine = createMachine(
         if (event.type !== 'ELEGIR_CARTA_DESEMPATE') return false;
         if (context.respuestaEnvidoPendiente || context.respuestaTrucPendiente)
           return false;
-        if (context.cartasDesempate[event.jugadorId] !== undefined) return false;
+        if (context.cartasDesempate[event.jugadorId] !== undefined)
+          return false;
         const hand = context.cartasJugadores[event.jugadorId] ?? [];
         const descOK = hasCard(hand, event.cartaDescubierta);
         const tapOK = hasCard(hand, event.cartaTapada);
@@ -1485,7 +1490,8 @@ export const trucMachine = createMachine(
         let ganadorBaza: ResultadoBaza = 'empate';
 
         if (equiposDesc.size === 1) {
-          ganadorBaza = (Array.from(equiposDesc)[0] ?? 'empate') as ResultadoBaza;
+          ganadorBaza = (Array.from(equiposDesc)[0] ??
+            'empate') as ResultadoBaza;
         } else {
           // Fase 2: comparar tapadas de los jugadores empatados en descubierta
           // Regla: si tapada tiene más poder que descubierta, se anula (valor 0)
@@ -1511,19 +1517,22 @@ export const trucMachine = createMachine(
             mejoresTap.map((j) => getPlayerTeam(context, j.jugadorId)),
           );
           if (equiposTap.size === 1) {
-            ganadorBaza = (Array.from(equiposTap)[0] ?? 'empate') as ResultadoBaza;
+            ganadorBaza = (Array.from(equiposTap)[0] ??
+              'empate') as ResultadoBaza;
           }
         }
 
         // Poner descubiertas en cartasEnMesa para display
-        const cartasEnMesa: CartaEnMesa[] = jugadoresOrden.flatMap((jugadorId) => {
-          const play = desempate[jugadorId];
-          if (!play) return [];
-          return [
-            { jugadorId, carta: play.descubierta, isOculta: false },
-            { jugadorId, carta: play.tapada, isOculta: true },
-          ];
-        });
+        const cartasEnMesa: CartaEnMesa[] = jugadoresOrden.flatMap(
+          (jugadorId) => {
+            const play = desempate[jugadorId];
+            if (!play) return [];
+            return [
+              { jugadorId, carta: play.descubierta, isOculta: false },
+              { jugadorId, carta: play.tapada, isOculta: true },
+            ];
+          },
+        );
 
         let ganadorId = context.turnoActual;
         if (ganadorBaza !== 'empate') {
