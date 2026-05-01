@@ -14,7 +14,6 @@ import type { GameSocketData } from './app/socket-types';
 const app = express();
 app.use(express.json());
 const httpServer = createServer(app);
-
 const io = new Server<
   ClientToServerEvents,
   ServerToClientEvents,

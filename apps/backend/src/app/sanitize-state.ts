@@ -68,14 +68,18 @@ export function sanitizeGameState(
   const cartasRival = firstRival?.cardCount ?? 0;
 
   // Para tapadas (isOculta=true): el propio jugador ve su carta, los demás ven el dorso
-  const cartasEnMesa = (context.cartasEnMesa || []).map((entry) => {
-    if (!entry.isOculta || entry.jugadorId === playerId) return entry;
-    // Ocultar carta tapada rival — enviar valor 0 / palo genérico como señal de dorso
-    return { jugadorId: entry.jugadorId, carta: entry.carta, isOculta: true };
-  });
+  const cartasEnMesa = (context.cartasEnMesa || []).map(
+    (entry: { isOculta: any; jugadorId: string; carta: any }) => {
+      if (!entry.isOculta || entry.jugadorId === playerId) return entry;
+      // Ocultar carta tapada rival — enviar valor 0 / palo genérico como señal de dorso
+      return { jugadorId: entry.jugadorId, carta: entry.carta, isOculta: true };
+    },
+  );
 
   const inDesempate = snapshot ? isDesempateActive(snapshot as never) : false;
-  const desempateSubmittedCount = Object.keys(context.cartasDesempate ?? {}).length;
+  const desempateSubmittedCount = Object.keys(
+    context.cartasDesempate ?? {},
+  ).length;
 
   // Block REPARTIR until all 4 seats are filled
   const filteredActions =
