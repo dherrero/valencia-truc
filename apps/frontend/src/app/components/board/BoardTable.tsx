@@ -13,7 +13,7 @@ export const BoardTable: React.FC<BoardTableProps> = ({ cards }) => {
 
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-      <div className="w-72 h-44 md:w-96 md:h-56 border-2 border-emerald-700/40 rounded-[40%] flex items-center justify-center bg-emerald-800/20 backdrop-blur-sm shadow-inner shadow-black/30">
+      <div className="w-44 h-28 sm:w-56 sm:h-36 md:w-72 md:h-44 border-2 border-emerald-700/40 rounded-[40%] flex items-center justify-center bg-emerald-800/20 backdrop-blur-sm shadow-inner shadow-black/30">
         <AnimatePresence>
           {cards.length > 0 ? (
             cards.map(({ carta }, idx: number) => (

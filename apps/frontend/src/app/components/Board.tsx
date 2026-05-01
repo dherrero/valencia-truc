@@ -113,7 +113,8 @@ export const Board: React.FC<{
         />
       )}
 
-      <div className="absolute top-16 left-1/2 -translate-x-1/2">
+      {/* Top: shift up so card backs partially exit top edge on mobile */}
+      <div className="absolute top-0 sm:top-16 left-1/2 -translate-x-1/2 -translate-y-8 sm:translate-y-0">
         {topSeat && (
           <BoardSeat
             seat={topSeat as PlayerSeat}
@@ -123,22 +124,26 @@ export const Board: React.FC<{
         )}
       </div>
 
-      <div className="absolute left-4 top-1/2 -translate-y-1/2">
+      {/* Left: shift left so card backs partially exit left edge on mobile */}
+      <div className="absolute -left-10 sm:left-4 top-1/2 -translate-y-1/2">
         {leftSeat && (
           <BoardOpponentSeat
             seat={leftSeat as PlayerSeat}
             isTurn={gameState?.turnoActual === leftSeat.playerId}
             isMano={gameState?.manoOriginal === leftSeat.playerId}
+            direction="left"
           />
         )}
       </div>
 
-      <div className="absolute right-4 top-1/2 -translate-y-1/2">
+      {/* Right: shift right so card backs partially exit right edge on mobile */}
+      <div className="absolute -right-10 sm:right-4 top-1/2 -translate-y-1/2">
         {rightSeat && (
           <BoardOpponentSeat
             seat={rightSeat as PlayerSeat}
             isTurn={gameState?.turnoActual === rightSeat.playerId}
             isMano={gameState?.manoOriginal === rightSeat.playerId}
+            direction="right"
           />
         )}
       </div>
