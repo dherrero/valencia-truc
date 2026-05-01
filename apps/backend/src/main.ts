@@ -71,6 +71,7 @@ const actionToEvent: Record<string, string> = {
   [TrucAction.JUEGO_FUERA]: 'JUEGO_FUERA',
   [TrucAction.ENVIDO]: 'CANTAR_ENVIDO',
   [TrucAction.TORNA_CHO]: 'TORNA_CHO',
+  [TrucAction.FALTA]: 'CANTAR_FALTA',
   [TrucAction.QUIERO]: 'QUIERO',
   [TrucAction.NO_QUIERO]: 'NO_QUIERO',
   [TrucAction.ELEGIR_CARTA_DESEMPATE]: 'ELEGIR_CARTA_DESEMPATE',
@@ -137,6 +138,7 @@ function emitStateToRoom(roomUid: string, actor: AnyActorRef) {
               board,
               allPlayerIds,
               phase,
+              snapshot,
             );
             console.log(
               `[STATE] Room ${roomUid} | pId=${pId} | turnoActual=${context.turnoActual} | manoOriginal=${context.manoOriginal} | cartasEnMesa=${context.cartasEnMesa?.length}`,
@@ -169,6 +171,7 @@ function emitInitialState(
     board,
     allPlayerIds,
     phase,
+    snapshot,
   );
   socket.emit('game:state-update', sanitized);
 }
@@ -341,6 +344,8 @@ io.on('connection', (socket: TrucSocket) => {
       ...room.playerIds,
       ...room.botIds,
     ]);
+    // Re-emit to all existing players so they see updated seat assignments
+    emitStateToRoom(uid, room.actor);
   });
 
   // ----- Game action -----
@@ -373,10 +378,15 @@ io.on('connection', (socket: TrucSocket) => {
         jugadores: [...room.playerIds, ...room.botIds],
       } as unknown as TrucEvent);
     } else if (eventType === 'ELEGIR_CARTA_DESEMPATE') {
+      const desempatePayload = action.payload as {
+        cartaDescubierta: import('@valencia-truc/shared-interfaces').Card;
+        cartaTapada: import('@valencia-truc/shared-interfaces').Card;
+      };
       room.actor.send({
         type: 'ELEGIR_CARTA_DESEMPATE',
         jugadorId: playerId,
-        cartaDescubierta: action.payload,
+        cartaDescubierta: desempatePayload.cartaDescubierta,
+        cartaTapada: desempatePayload.cartaTapada,
       } as unknown as TrucEvent);
     } else {
       room.actor.send({

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { CardBack } from '../CardBack';
 import { useI18n } from '../../i18n/LanguageProvider';
@@ -6,13 +6,59 @@ import { useI18n } from '../../i18n/LanguageProvider';
 interface BoardLobbyScreenProps {
   canDeal: boolean;
   onDeal: () => void;
+  roomUid: string;
+  playerCount?: number;
 }
 
 export const BoardLobbyScreen: React.FC<BoardLobbyScreenProps> = ({
   canDeal,
   onDeal,
+  roomUid,
+  playerCount = 1,
 }) => {
   const { t } = useI18n();
+  const [copied, setCopied] = useState(false);
+
+  const inviteUrl = `${window.location.origin}/partida/${roomUid}`;
+
+  const handleShare = async () => {
+    // Native share sheet on mobile (Android/iOS)
+    if (navigator.share) {
+      try {
+        await navigator.share({ url: inviteUrl });
+        return;
+      } catch {
+        // User cancelled or share failed — fall through to clipboard
+      }
+    }
+
+    // Clipboard API (HTTPS / desktop)
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(inviteUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        return;
+      } catch {
+        // fall through
+      }
+    }
+
+    // execCommand fallback (HTTP or older browsers)
+    const ta = document.createElement('textarea');
+    ta.value = inviteUrl;
+    ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      document.execCommand('copy');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } finally {
+      document.body.removeChild(ta);
+    }
+  };
 
   return (
     <div className="flex items-center justify-center w-full h-screen bg-emerald-950 text-white overflow-hidden">
@@ -50,6 +96,7 @@ export const BoardLobbyScreen: React.FC<BoardLobbyScreenProps> = ({
             </motion.div>
           ))}
         </div>
+
         {canDeal ? (
           <motion.button
             initial={{ opacity: 0, y: 20 }}
@@ -64,9 +111,48 @@ export const BoardLobbyScreen: React.FC<BoardLobbyScreenProps> = ({
             {t('board.dealCards')}
           </motion.button>
         ) : (
-          <p className="text-emerald-500 animate-pulse text-lg">
-            {t('board.waitingPlayers')}
-          </p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+            className="flex flex-col items-center gap-4"
+          >
+            <p className="text-emerald-400 animate-pulse text-lg font-semibold">
+              {t('board.waitingPlayers')}
+            </p>
+            <div className="flex gap-2 text-emerald-600 text-sm">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <span
+                  key={i}
+                  className={`w-3 h-3 rounded-full border-2 ${
+                    i < playerCount
+                      ? 'bg-emerald-400 border-emerald-400'
+                      : 'bg-transparent border-emerald-700'
+                  }`}
+                />
+              ))}
+            </div>
+            <p className="text-emerald-600 text-sm">
+              {playerCount}/4 {t('board.playersConnected')}
+            </p>
+
+            <div className="mt-2 flex flex-col items-center gap-2 w-full max-w-sm">
+              <p className="text-emerald-500 text-xs uppercase tracking-widest">
+                {t('board.inviteLink')}
+              </p>
+              <div className="flex items-center gap-2 w-full bg-emerald-900/60 rounded-xl px-3 py-2 border border-emerald-700">
+                <span className="text-emerald-300 text-xs truncate flex-1 font-mono">
+                  {inviteUrl}
+                </span>
+                <button
+                  onClick={handleShare}
+                  className="shrink-0 px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors"
+                >
+                  {copied ? t('board.linkCopied') : t('board.copyLink')}
+                </button>
+              </div>
+            </div>
+          </motion.div>
         )}
       </motion.div>
     </div>

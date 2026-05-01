@@ -6,6 +6,7 @@ import {
   calculateEnvido,
   getAllowedActions,
   getCardPower,
+  isDesempateActive,
 } from '@valencia-truc/shared-game-engine';
 
 export class TrucBot {
@@ -86,13 +87,32 @@ export class TrucBot {
       },
     );
 
+    // 0. Desempate: elegir 2 cartas (descubierta y tapada)
+    if (can(TrucAction.ELEGIR_CARTA_DESEMPATE) && isDesempateActive(currentState as never)) {
+      const misCartas = context.cartasJugadores?.[this.botId] ?? [];
+      if (misCartas.length >= 2) {
+        // Ordenar por poder: descubierta = más fuerte, tapada = más débil
+        const sorted = [...misCartas].sort(
+          (a, b) => getCardPower(b) - getCardPower(a),
+        );
+        this.actor.send({
+          type: 'ELEGIR_CARTA_DESEMPATE',
+          jugadorId: this.botId,
+          cartaDescubierta: sorted[0],
+          cartaTapada: sorted[1],
+        } as never);
+      }
+      return;
+    }
+
     // 1. Respond to challenge (Quiero / No Quiero)
     if (can(TrucAction.QUIERO) && can(TrucAction.NO_QUIERO)) {
       if (teammateHumanCanRespond) return;
 
       if (
         currentState.matches({ envido: 'cantado' }) ||
-        currentState.matches({ envido: 'torna_cho_cantado' })
+        currentState.matches({ envido: 'torna_cho_cantado' }) ||
+        currentState.matches({ envido: 'falta_cantado' })
       ) {
         this.actor.send({
           type: envidoPoints > 25 ? 'QUIERO' : 'NO_QUIERO',

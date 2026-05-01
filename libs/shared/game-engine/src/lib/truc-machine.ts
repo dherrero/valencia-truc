@@ -17,7 +17,7 @@ import {
 type Team = 'equipo1' | 'equipo2';
 type ResultadoBaza = Team | 'empate';
 type EstadoTruc = 'ninguno' | 'truc' | 'retruc' | 'vale_quatre' | 'juego_fuera';
-type EstadoEnvido = 'ninguno' | 'envido' | 'torna_cho';
+type EstadoEnvido = 'ninguno' | 'envido' | 'torna_cho' | 'falta';
 
 type CartaEnMesa = { jugadorId: string; carta: Card; isOculta?: boolean };
 
@@ -49,6 +49,8 @@ export interface TrucContext {
   resumenRonda: RoundSummary | null;
   historialAcciones: ActionLogEntry[];
   siguienteAccionId: number;
+  puntosEnvidoRechazo: number;
+  cartasDesempate: Record<string, { descubierta: Card; tapada: Card }>;
 }
 
 export type TrucEvent =
@@ -58,8 +60,10 @@ export type TrucEvent =
       type: 'ELEGIR_CARTA_DESEMPATE';
       jugadorId: string;
       cartaDescubierta: Card;
+      cartaTapada: Card;
     }
   | { type: 'CANTAR_TRUC'; jugadorId: string }
+  | { type: 'CANTAR_FALTA'; jugadorId: string }
   | { type: 'RETRUC'; jugadorId: string }
   | { type: 'VALE_QUATRE'; jugadorId: string }
   | { type: 'JUEGO_FUERA'; jugadorId: string }
@@ -89,12 +93,23 @@ function isRoundPlayable(snapshot: MachineSnapshot): boolean {
     snapshot.matches({ ronda: 'mano_1' }) ||
     snapshot.matches({ ronda: 'mano_2' }) ||
     snapshot.matches({ ronda: 'mano_3' }) ||
+    snapshot.matches({ ronda: 'mano_desempate' }) ||
     snapshot.matches({ ronda: 'esperando_evaluar_1' }) ||
     snapshot.matches({ ronda: 'esperando_evaluar_2' }) ||
     snapshot.matches({ ronda: 'esperando_evaluar_3' }) ||
+    snapshot.matches({ ronda: 'esperando_evaluar_desempate' }) ||
     snapshot.matches({ ronda: 'evaluar_baza_1' }) ||
     snapshot.matches({ ronda: 'evaluar_baza_2' }) ||
-    snapshot.matches({ ronda: 'evaluar_baza_3' })
+    snapshot.matches({ ronda: 'evaluar_baza_3' }) ||
+    snapshot.matches({ ronda: 'evaluar_baza_desempate' })
+  );
+}
+
+export function isDesempateActive(snapshot: MachineSnapshot): boolean {
+  return (
+    snapshot.matches({ ronda: 'mano_desempate' }) ||
+    snapshot.matches({ ronda: 'esperando_evaluar_desempate' }) ||
+    snapshot.matches({ ronda: 'evaluar_baza_desempate' })
   );
 }
 
@@ -113,15 +128,14 @@ function getRejectionPointsForTruc(estado: EstadoTruc): number {
   }
 }
 
-function getRejectionPointsForEnvido(estado: EstadoEnvido): number {
-  switch (estado) {
-    case 'torna_cho':
-      return 2;
-    case 'envido':
-    case 'ninguno':
-    default:
-      return 1;
+function calculateFaltaPoints(context: TrucContext): number {
+  const { equipo1, equipo2 } = context.puntuacionCama;
+  const camaSize = 24;
+  const halfCama = camaSize / 2;
+  if (equipo1 < halfCama && equipo2 < halfCama) {
+    return camaSize; // "malas" — ningún equipo ha llegado a la mitad
   }
+  return camaSize - Math.max(equipo1, equipo2); // "buenas"
 }
 
 function resolveEnvidoWinner(context: TrucContext): Team {
@@ -192,7 +206,9 @@ function getEnvidoReason(estado: EstadoEnvido, accepted: boolean) {
   if (estado === 'torna_cho') {
     return accepted ? 'torna-cho-accepted' : 'torna-cho-rejected';
   }
-
+  if (estado === 'falta') {
+    return accepted ? 'falta-accepted' : 'falta-rejected';
+  }
   return accepted ? 'envido-accepted' : 'envido-rejected';
 }
 
@@ -260,6 +276,8 @@ function getEnvidoLabel(estado: EstadoEnvido) {
   switch (estado) {
     case 'torna_cho':
       return 'Torna-cho';
+    case 'falta':
+      return 'Falta';
     case 'envido':
       return 'Envido';
     case 'ninguno':
@@ -342,6 +360,10 @@ export function getAllowedActions(
       allowedActions.push(TrucAction.QUIERO, TrucAction.NO_QUIERO);
       if (snapshot.matches({ envido: 'cantado' })) {
         allowedActions.push(TrucAction.TORNA_CHO);
+        allowedActions.push(TrucAction.FALTA);
+      }
+      if (snapshot.matches({ envido: 'torna_cho_cantado' })) {
+        allowedActions.push(TrucAction.FALTA);
       }
     }
 
@@ -368,7 +390,20 @@ export function getAllowedActions(
     return allowedActions;
   }
 
-  if (context.turnoActual === jugadorId) {
+  // Desempate: todos los jugadores pueden elegir sus 2 cartas en cualquier orden
+  if (
+    snapshot.matches({ ronda: 'mano_desempate' }) &&
+    !context.cartasDesempate[jugadorId] &&
+    !context.respuestaEnvidoPendiente &&
+    !context.respuestaTrucPendiente
+  ) {
+    allowedActions.push(TrucAction.ELEGIR_CARTA_DESEMPATE);
+  }
+
+  if (
+    !snapshot.matches({ ronda: 'mano_desempate' }) &&
+    context.turnoActual === jugadorId
+  ) {
     allowedActions.push(TrucAction.JUGAR_CARTA);
   }
 
@@ -439,6 +474,8 @@ export const trucMachine = createMachine(
       resumenRonda: null,
       historialAcciones: [],
       siguienteAccionId: 1,
+      puntosEnvidoRechazo: 0,
+      cartasDesempate: {},
     },
     states: {
       ronda: {
@@ -477,7 +514,45 @@ export const trucMachine = createMachine(
             },
           },
           evaluar_baza_1: {
-            always: [{ target: 'mano_2' }],
+            always: [
+              { guard: 'primeroEmpate', target: 'mano_desempate' },
+              { target: 'mano_2' },
+            ],
+          },
+          mano_desempate: {
+            always: {
+              guard: 'desempateCompleto',
+              target: 'esperando_evaluar_desempate',
+            },
+            on: {
+              ELEGIR_CARTA_DESEMPATE: {
+                actions: 'registrarCartasDesempate',
+                guard: 'esDesempateValido',
+              },
+            },
+          },
+          esperando_evaluar_desempate: {
+            after: {
+              1500: {
+                target: 'evaluar_baza_desempate',
+                actions: 'evaluarGanadorDesempate',
+              },
+            },
+          },
+          evaluar_baza_desempate: {
+            always: [
+              {
+                guard: 'equipo1GanaRonda',
+                target: 'finalizar_ronda',
+                actions: 'anotarRondaEq1',
+              },
+              {
+                guard: 'equipo2GanaRonda',
+                target: 'finalizar_ronda',
+                actions: 'anotarRondaEq2',
+              },
+              { target: 'finalizar_ronda', actions: 'anotarRondaManoOriginal' },
+            ],
           },
           mano_2: {
             always: {
@@ -594,10 +669,35 @@ export const trucMachine = createMachine(
                 guard: 'respondeEquipoContrarioEnvido',
                 actions: 'registrarTornaCho',
               },
+              CANTAR_FALTA: {
+                target: 'falta_cantado',
+                guard: 'respondeEquipoContrarioEnvido',
+                actions: 'registrarFalta',
+              },
               REPARTIR: { target: 'disponible' },
             },
           },
           torna_cho_cantado: {
+            on: {
+              QUIERO: {
+                target: 'finalizado',
+                guard: 'respondeEquipoContrarioEnvido',
+                actions: 'resolverEnvido',
+              },
+              NO_QUIERO: {
+                target: 'finalizado',
+                guard: 'respondeEquipoContrarioEnvido',
+                actions: 'rechazarEnvido',
+              },
+              CANTAR_FALTA: {
+                target: 'falta_cantado',
+                guard: 'respondeEquipoContrarioEnvido',
+                actions: 'registrarFalta',
+              },
+              REPARTIR: { target: 'disponible' },
+            },
+          },
+          falta_cantado: {
             on: {
               QUIERO: {
                 target: 'finalizado',
@@ -818,6 +918,26 @@ export const trucMachine = createMachine(
       },
       mesaLlena: ({ context }) =>
         context.cartasEnMesa.length === context.jugadoresOrden.length,
+      primeroEmpate: ({ context }) => context.historialBazas[0] === 'empate',
+      desempateCompleto: ({ context }) =>
+        context.jugadoresOrden.length > 0 &&
+        context.jugadoresOrden.every(
+          (id) => context.cartasDesempate[id] !== undefined,
+        ),
+      esDesempateValido: ({ context, event }) => {
+        if (event.type !== 'ELEGIR_CARTA_DESEMPATE') return false;
+        if (context.respuestaEnvidoPendiente || context.respuestaTrucPendiente)
+          return false;
+        if (context.cartasDesempate[event.jugadorId] !== undefined) return false;
+        const hand = context.cartasJugadores[event.jugadorId] ?? [];
+        const descOK = hasCard(hand, event.cartaDescubierta);
+        const tapOK = hasCard(hand, event.cartaTapada);
+        const differentCards = !(
+          event.cartaDescubierta.suit === event.cartaTapada.suit &&
+          event.cartaDescubierta.value === event.cartaTapada.value
+        );
+        return descOK && tapOK && differentCards;
+      },
       esSuTurnoYTieneCarta: ({ context, event }) => {
         if (event.type !== 'JUGAR_CARTA') return false;
         if (context.respuestaEnvidoPendiente || context.respuestaTrucPendiente)
@@ -880,6 +1000,7 @@ export const trucMachine = createMachine(
           }),
           estadoEnvido: 'envido' as const,
           puntosEnvidoActual: 2,
+          puntosEnvidoRechazo: 1,
           equipoApostadorEnvido: getPlayerTeam(context, event.jugadorId),
           respuestaEnvidoPendiente: true,
         };
@@ -894,6 +1015,23 @@ export const trucMachine = createMachine(
           }),
           estadoEnvido: 'torna_cho' as const,
           puntosEnvidoActual: 4,
+          puntosEnvidoRechazo: 2,
+          equipoApostadorEnvido: getPlayerTeam(context, event.jugadorId),
+          respuestaEnvidoPendiente: true,
+        };
+      }),
+      registrarFalta: assign(({ context, event }) => {
+        if (event.type !== 'CANTAR_FALTA') return {};
+
+        const puntosFalta = calculateFaltaPoints(context);
+        return {
+          ...appendActionLog(context, {
+            type: 'FALTA',
+            jugadorId: event.jugadorId,
+          }),
+          estadoEnvido: 'falta' as const,
+          puntosEnvidoActual: puntosFalta,
+          puntosEnvidoRechazo: context.puntosEnvidoRechazo,
           equipoApostadorEnvido: getPlayerTeam(context, event.jugadorId),
           respuestaEnvidoPendiente: true,
         };
@@ -929,7 +1067,7 @@ export const trucMachine = createMachine(
       rechazarEnvido: assign(({ context, event }) => {
         const ganador = context.equipoApostadorEnvido;
         if (ganador == null) return {};
-        const puntos = getRejectionPointsForEnvido(context.estadoEnvido);
+        const puntos = context.puntosEnvidoRechazo;
 
         return {
           ...appendActionLog(
@@ -1197,6 +1335,7 @@ export const trucMachine = createMachine(
           historialBazas: [],
           estadoEnvido: 'ninguno' as const,
           puntosEnvidoActual: 0,
+          puntosEnvidoRechazo: 0,
           equipoApostadorEnvido: null,
           respuestaEnvidoPendiente: false,
           puntosTrucActual: 1,
@@ -1214,6 +1353,7 @@ export const trucMachine = createMachine(
           manoOriginal,
           turnoActual: manoOriginal,
           cartasEnMesa: [],
+          cartasDesempate: {},
         } as Partial<TrucContext>;
       }),
       jugarCarta: assign(({ context, event }) => {
@@ -1281,6 +1421,122 @@ export const trucMachine = createMachine(
         return {
           historialBazas: [...context.historialBazas, ganadorBaza],
           cartasEnMesa: [],
+          turnoActual: ganadorId,
+          manoActual: context.manoActual + 1,
+        };
+      }),
+      registrarCartasDesempate: assign(({ context, event }) => {
+        if (event.type !== 'ELEGIR_CARTA_DESEMPATE') return {};
+
+        const currentHand = context.cartasJugadores[event.jugadorId] ?? [];
+        const newHand = currentHand.filter(
+          (c) =>
+            !(
+              c.suit === event.cartaDescubierta.suit &&
+              c.value === event.cartaDescubierta.value
+            ) &&
+            !(
+              c.suit === event.cartaTapada.suit &&
+              c.value === event.cartaTapada.value
+            ),
+        );
+
+        return {
+          ...appendActionLog(context, {
+            type: 'ELEGIR_CARTA_DESEMPATE',
+            jugadorId: event.jugadorId,
+          }),
+          cartasDesempate: {
+            ...context.cartasDesempate,
+            [event.jugadorId]: {
+              descubierta: event.cartaDescubierta,
+              tapada: event.cartaTapada,
+            },
+          },
+          cartasJugadores: {
+            ...context.cartasJugadores,
+            [event.jugadorId]: newHand,
+          },
+        };
+      }),
+      evaluarGanadorDesempate: assign(({ context }) => {
+        const jugadoresOrden = context.jugadoresOrden;
+        const desempate = context.cartasDesempate;
+
+        // Fase 1: comparar descubiertas
+        let maxPower = -1;
+        let mejoresDesc: Array<{ jugadorId: string }> = [];
+
+        for (const jugadorId of jugadoresOrden) {
+          const play = desempate[jugadorId];
+          if (!play) continue;
+          const power = getCardPower(play.descubierta);
+          if (power > maxPower) {
+            maxPower = power;
+            mejoresDesc = [{ jugadorId }];
+          } else if (power === maxPower) {
+            mejoresDesc.push({ jugadorId });
+          }
+        }
+
+        const equiposDesc = new Set(
+          mejoresDesc.map((j) => getPlayerTeam(context, j.jugadorId)),
+        );
+        let ganadorBaza: ResultadoBaza = 'empate';
+
+        if (equiposDesc.size === 1) {
+          ganadorBaza = (Array.from(equiposDesc)[0] ?? 'empate') as ResultadoBaza;
+        } else {
+          // Fase 2: comparar tapadas de los jugadores empatados en descubierta
+          // Regla: si tapada tiene más poder que descubierta, se anula (valor 0)
+          let maxTapPower = -1;
+          let mejoresTap: Array<{ jugadorId: string }> = [];
+
+          for (const { jugadorId } of mejoresDesc) {
+            const play = desempate[jugadorId];
+            if (!play) continue;
+            const descPower = getCardPower(play.descubierta);
+            const tapPower = getCardPower(play.tapada);
+            const effectiveTap = tapPower > descPower ? 0 : tapPower;
+
+            if (effectiveTap > maxTapPower) {
+              maxTapPower = effectiveTap;
+              mejoresTap = [{ jugadorId }];
+            } else if (effectiveTap === maxTapPower) {
+              mejoresTap.push({ jugadorId });
+            }
+          }
+
+          const equiposTap = new Set(
+            mejoresTap.map((j) => getPlayerTeam(context, j.jugadorId)),
+          );
+          if (equiposTap.size === 1) {
+            ganadorBaza = (Array.from(equiposTap)[0] ?? 'empate') as ResultadoBaza;
+          }
+        }
+
+        // Poner descubiertas en cartasEnMesa para display
+        const cartasEnMesa: CartaEnMesa[] = jugadoresOrden.flatMap((jugadorId) => {
+          const play = desempate[jugadorId];
+          if (!play) return [];
+          return [
+            { jugadorId, carta: play.descubierta, isOculta: false },
+            { jugadorId, carta: play.tapada, isOculta: true },
+          ];
+        });
+
+        let ganadorId = context.turnoActual;
+        if (ganadorBaza !== 'empate') {
+          const winnerPlay = jugadoresOrden.find(
+            (id) => getPlayerTeam(context, id) === ganadorBaza,
+          );
+          if (winnerPlay) ganadorId = winnerPlay;
+        }
+
+        return {
+          historialBazas: [...context.historialBazas, ganadorBaza],
+          cartasDesempate: {},
+          cartasEnMesa,
           turnoActual: ganadorId,
           manoActual: context.manoActual + 1,
         };

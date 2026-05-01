@@ -59,35 +59,35 @@ export const GameLog: React.FC<GameLogProps> = ({ entries, playerId }) => {
   if (visibleEntries.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-40 w-72 rounded-2xl border border-emerald-700/60 bg-emerald-950/90 p-3 shadow-2xl backdrop-blur-sm">
+    <div className="fixed bottom-4 right-2 sm:right-4 z-40 w-44 sm:w-72 rounded-2xl border border-emerald-700/60 bg-emerald-950/90 p-2 sm:p-3 shadow-2xl backdrop-blur-sm">
       <button
         type="button"
         onClick={() => setIsCollapsed((current) => !current)}
-        className="flex w-full items-center justify-between rounded-xl px-1 py-1 text-left"
+        className="flex w-full items-center justify-between rounded-xl px-1 py-0.5 sm:py-1 text-left"
       >
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">
+          <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">
             {t('log.title')}
           </p>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-500">
+          <p className="hidden sm:block text-[10px] uppercase tracking-[0.2em] text-emerald-500">
             {t('log.latest')}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="rounded-full bg-emerald-900 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-300">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <span className="rounded-full bg-emerald-900 px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-300">
             {visibleEntries.length}
           </span>
-          <span className="text-lg font-black text-emerald-200">
-            {isCollapsed ? '+' : '-'}
+          <span className="text-base sm:text-lg font-black text-emerald-200">
+            {isCollapsed ? '+' : '−'}
           </span>
         </div>
       </button>
       {!isCollapsed && (
-        <div className="mt-3 flex flex-col gap-2">
+        <div className="mt-2 sm:mt-3 flex flex-col gap-1.5 sm:gap-2">
           {visibleEntries.map((entry) => (
             <div
               key={entry.id}
-              className="rounded-xl border border-emerald-800/80 bg-black/20 px-3 py-2 text-sm font-medium text-emerald-50"
+              className="rounded-xl border border-emerald-800/80 bg-black/20 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-emerald-50"
             >
               {formatEntry(entry, playerId, t)}
             </div>

@@ -1,5 +1,5 @@
-import React from 'react';
-import { TrucAction, PlayerSeat } from '@valencia-truc/shared-interfaces';
+import React, { useState, useEffect, useCallback } from 'react';
+import { TrucAction, PlayerSeat, Card } from '@valencia-truc/shared-interfaces';
 import { Snackbar, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useTrucSocket } from '../hooks/useTrucSocket';
@@ -33,12 +33,36 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
     clearError,
   } = useTrucSocket(roomUid, playerId);
 
+  const [desempateDescubierta, setDesempateDescubierta] = useState<Card | null>(null);
+
   const isLobby = sessionPhase === 'lobby';
   const canDeal =
     gameState?.allowedActions.includes(TrucAction.REPARTIR) ?? false;
   const canPlayCard =
     gameState?.allowedActions.includes(TrucAction.JUGAR_CARTA) ?? false;
+  const canElegirDesempate =
+    gameState?.allowedActions.includes(TrucAction.ELEGIR_CARTA_DESEMPATE) ?? false;
   const roundSummary = gameState?.roundSummary;
+
+  // Limpiar selección de desempate cuando ya no aplica
+  useEffect(() => {
+    if (!canElegirDesempate) setDesempateDescubierta(null);
+  }, [canElegirDesempate]);
+
+  const handleDesempateSelect = useCallback(
+    (card: Card) => {
+      if (!desempateDescubierta) {
+        setDesempateDescubierta(card);
+      } else {
+        sendAction(TrucAction.ELEGIR_CARTA_DESEMPATE, {
+          cartaDescubierta: desempateDescubierta,
+          cartaTapada: card,
+        });
+        setDesempateDescubierta(null);
+      }
+    },
+    [desempateDescubierta, sendAction],
+  );
 
   const topSeat = gameState?.otherPlayers?.find((p) => p.position === 'top');
   const rightSeat = gameState?.otherPlayers?.find(
@@ -55,6 +79,8 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
       <BoardLobbyScreen
         canDeal={canDeal}
         onDeal={() => sendAction(TrucAction.REPARTIR)}
+        roomUid={roomUid}
+        playerCount={gameState?.playerCount}
       />
     );
   }
@@ -124,7 +150,10 @@ export const Board: React.FC<{ roomUid: string; playerId: string }> = ({
         manoOriginal={gameState?.manoOriginal}
         turnPlayerId={gameState?.turnoActual}
         canPlayCard={canPlayCard}
+        canElegirDesempate={canElegirDesempate}
+        desempateDescubierta={desempateDescubierta}
         onCardPlay={sendAction}
+        onDesempateSelect={handleDesempateSelect}
       />
 
       <Snackbar

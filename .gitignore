@@ -49,4 +49,4 @@ vitest.config.*.timestamp*
 test-output
 
 bot-debug.log
-.env
+.envdocker-compose.override.yml

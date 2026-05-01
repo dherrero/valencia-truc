@@ -40,6 +40,7 @@ export enum TrucAction {
   JUEGO_FUERA = 'JUEGO_FUERA',
   ENVIDO = 'ENVIDO',
   TORNA_CHO = 'TORNA_CHO',
+  FALTA = 'FALTA',
   QUIERO = 'QUIERO',
   NO_QUIERO = 'NO_QUIERO',
   JUGAR_CARTA = 'JUGAR_CARTA',
@@ -67,8 +68,10 @@ export interface GameStateUpdate {
   myTeam: 'equipo1' | 'equipo2';
   turnoActual?: string;
   manoOriginal?: string;
-  cartasEnMesa?: { jugadorId: string; carta: Card }[];
+  cartasEnMesa?: { jugadorId: string; carta: Card; isOculta?: boolean }[];
+  desempateSubmittedCount?: number;
   bazaResults?: Array<'equipo1' | 'equipo2' | 'empate'>;
+  playerCount?: number;
 }
 
 export interface GameOverState {
