@@ -1,6 +1,6 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { RoomSummary } from '@valencia-truc/shared-interfaces';
+import { MAX_ACTIVE_ROOMS, RoomSummary } from '@valencia-truc/shared-interfaces';
 import { useI18n } from '../../i18n/useI18n';
 
 interface RoomsPanelProps {
@@ -15,18 +15,24 @@ export const RoomsPanel: React.FC<RoomsPanelProps> = ({
   onJoinRoom,
 }) => {
   const { t } = useI18n();
+  const limitReached = rooms.length >= MAX_ACTIVE_ROOMS;
 
   return (
     <>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-emerald-300">
-          {t('home.activeRooms')}
+          {t('home.activeRooms')}{' '}
+          <span className="text-emerald-500 text-sm font-medium">
+            ({rooms.length}/{MAX_ACTIVE_ROOMS})
+          </span>
         </h2>
         <button
           onClick={onCreateRoom}
           type="button"
           data-qa="home-create-room-button"
-          className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-xl transition-colors shadow-lg"
+          disabled={limitReached}
+          title={limitReached ? t('home.roomLimitReached') : undefined}
+          className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-xl transition-colors shadow-lg disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-500"
         >
           + {t('home.createRoom')}
         </button>
