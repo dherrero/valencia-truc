@@ -42,18 +42,25 @@ export const BoardOpponentSeat: React.FC<BoardOpponentSeatProps> = ({
           />
         )}
         <div
-          className={`relative flex flex-col items-center gap-2 p-3 rounded-xl ring-1 ring-emerald-500/30 min-w-[90px] min-h-[120px] ${isTurn ? 'ring-2 ring-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.6)]' : ''} ${cardShift}`}
+          className={`relative flex flex-col items-center p-2 rounded-xl ring-1 ring-emerald-500/30 ${isTurn ? 'ring-2 ring-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.6)]' : ''} ${cardShift}`}
         >
-          <div className="flex flex-col justify-center items-center -space-y-12 scale-75 origin-center">
+          <div className="flex flex-col items-center -space-y-4">
             <AnimatePresence>
               {backs.length > 0 ? (
                 backs.map((_, i) => (
-                  <div key={i} className="-rotate-90 origin-center">
-                    <CardBack delay={i * 0.08} />
+                  <div
+                    key={i}
+                    className="relative w-[75px] h-[50px] sm:w-[120px] sm:h-[80px]"
+                  >
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-90 scale-75">
+                      <CardBack delay={i * 0.08} />
+                    </div>
                   </div>
                 ))
               ) : (
-                <span className="text-slate-600 text-xs italic">—</span>
+                <span className="text-slate-600 text-xs italic px-4 py-6">
+                  —
+                </span>
               )}
             </AnimatePresence>
           </div>
