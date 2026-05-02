@@ -23,6 +23,11 @@ export interface RoomManager {
     playerId: string,
     room: Room,
   ) => void;
+  touchActivity: (uid: string) => void;
+  startIdleCleanup: (
+    idleMs: number,
+    intervalMs?: number,
+  ) => () => void;
 }
 
 function getRondaState(value: unknown) {
@@ -75,6 +80,7 @@ export function createRoomManager(io: GameServer): RoomManager {
       status: 'waiting',
       emitDebounce: null,
       autoDealTimeout: null,
+      lastActivityAt: Date.now(),
     };
 
     rooms.set(uid, room);
@@ -134,6 +140,30 @@ export function createRoomManager(io: GameServer): RoomManager {
     return room;
   }
 
+  function touchActivity(uid: string) {
+    const room = rooms.get(uid);
+    if (!room) return;
+    room.lastActivityAt = Date.now();
+  }
+
+  function startIdleCleanup(idleMs: number, intervalMs = 60_000) {
+    const interval = setInterval(() => {
+      const cutoff = Date.now() - idleMs;
+      for (const room of rooms.values()) {
+        if (room.lastActivityAt < cutoff) {
+          console.log(
+            `[IDLE-CLEANUP] Destroying room ${room.uid} (${room.name}) — idle for ${
+              Math.round((Date.now() - room.lastActivityAt) / 1000)
+            }s`,
+          );
+          destroyRoom(room.uid);
+        }
+      }
+    }, intervalMs);
+    interval.unref?.();
+    return () => clearInterval(interval);
+  }
+
   return {
     rooms,
     createRoom,
@@ -145,5 +175,7 @@ export function createRoomManager(io: GameServer): RoomManager {
       playerId: string,
       room: Room,
     ) => emitInitialState(socket, playerId, room),
+    touchActivity,
+    startIdleCleanup,
   };
 }

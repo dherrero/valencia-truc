@@ -1,7 +1,8 @@
 import { getAllowedActions } from '@valencia-truc/shared-game-engine';
 import type { Server } from 'socket.io';
-import type {
+import {
   ClientToServerEvents,
+  MAX_ACTIVE_ROOMS,
   ServerToClientEvents,
   TrucAction,
 } from '@valencia-truc/shared-interfaces';
@@ -25,6 +26,14 @@ export function registerSocketHandlers(
     socket.on(
       'room:create',
       ({ name, bots = 0, playerId, playerName }, callback) => {
+        if (roomManager.rooms.size >= MAX_ACTIVE_ROOMS) {
+          callback({
+            status: 'error',
+            message: `Límite de salas activas alcanzado (${MAX_ACTIVE_ROOMS}).`,
+          });
+          return;
+        }
+
         const roomName = name?.trim() || `Sala ${roomManager.rooms.size + 1}`;
         const botCount = Math.max(0, Math.min(3, bots));
         const displayName = normalizePlayerName(playerName, 'Jugador 1');
@@ -64,6 +73,7 @@ export function registerSocketHandlers(
       }
 
       room.playerNames[playerId] = displayName;
+      roomManager.touchActivity(uid);
 
       socket.data.playerId = playerId;
       socket.data.roomUid = uid;
@@ -122,6 +132,7 @@ export function registerSocketHandlers(
         roomManager.broadcastRoomsList();
       }
 
+      roomManager.touchActivity(room.uid);
       callback({ status: 'ok' });
     });
 

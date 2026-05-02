@@ -1,5 +1,7 @@
 import { Card } from './shared-interfaces.js';
 
+export const MAX_ACTIVE_ROOMS = 5;
+
 export interface ActionLogEntry {
   id: number;
   type: string;

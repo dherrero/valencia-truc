@@ -42,6 +42,7 @@ export const translations: Record<Language, TranslationTree> = {
       createRoomError: 'Error al crear la sala',
       joinRoomError: 'Error al unir-se a la sala',
       nameRequired: 'Introdueix un nom per continuar',
+      roomLimitReached: 'Sha arribat al límit de sales actives.',
     },
     rules: {
       title: 'Regles del Truc Valencià',
@@ -214,6 +215,7 @@ export const translations: Record<Language, TranslationTree> = {
       createRoomError: 'Error al crear la sala',
       joinRoomError: 'Error al unirse a la sala',
       nameRequired: 'Introduce un nombre para continuar',
+      roomLimitReached: 'Se ha alcanzado el límite de salas activas.',
     },
     rules: {
       title: 'Reglas del Truc Valenciano',

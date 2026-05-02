@@ -35,6 +35,11 @@ registerHttpRoutes(app, roomManager);
 // Socket Handlers
 registerSocketHandlers(io, roomManager);
 
+// Idle Room Cleanup — destroys rooms inactive for >5 minutes
+const IDLE_ROOM_TIMEOUT_MS = 5 * 60 * 1000;
+const IDLE_ROOM_CHECK_INTERVAL_MS = 60 * 1000;
+roomManager.startIdleCleanup(IDLE_ROOM_TIMEOUT_MS, IDLE_ROOM_CHECK_INTERVAL_MS);
+
 const port = process.env.PORT || 3333;
 httpServer.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`);
