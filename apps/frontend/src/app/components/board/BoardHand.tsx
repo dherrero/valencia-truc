@@ -118,7 +118,7 @@ export const BoardHand: React.FC<BoardHandProps> = ({
       {/* Mobile: flat row shifted down so only card tops (number + suit) are visible */}
       <div
         className={`sm:hidden inline-flex items-center gap-2 p-3 rounded-2xl transition-all ${ringClass}`}
-        style={{ transform: 'translateY(65px)' }}
+        style={{ transform: 'translateY(50px)' }}
       >
         {cards}
       </div>

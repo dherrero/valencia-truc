@@ -72,3 +72,20 @@
 .card-5-bastos  { background-position: -416px -477px; }
 .card-6-bastos  { background-position: -520px -477px; }
 .card-7-bastos  { background-position: -624px -477px; }
+
+/* Orientation lock overlay logic */
+.orientation-guard {
+  display: none;
+}
+
+@media screen and (orientation: landscape) and (max-width: 932px) {
+  .orientation-guard {
+    display: flex;
+  }
+
+  /* Hide the rest of the app to prevent scroll/interactions */
+  body {
+    overflow: hidden;
+  }
+}
+
