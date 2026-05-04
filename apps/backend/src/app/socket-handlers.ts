@@ -1,10 +1,11 @@
 import { getAllowedActions } from '@valencia-truc/shared-game-engine';
 import type { Server } from 'socket.io';
 import {
-  ClientToServerEvents,
   MAX_ACTIVE_ROOMS,
-  ServerToClientEvents,
-  TrucAction,
+  type Card,
+  type ClientToServerEvents,
+  type ServerToClientEvents,
+  type TrucAction,
 } from '@valencia-truc/shared-interfaces';
 import {
   actionToEvent,
@@ -114,10 +115,21 @@ export function registerSocketHandlers(
           jugadores: [...room.playerIds, ...room.botIds],
         });
       } else if (eventType === 'ELEGIR_CARTA_DESEMPATE') {
+        const payload = action.payload as
+          | { cartaDescubierta?: Card; cartaTapada?: Card }
+          | undefined;
+        if (!payload?.cartaDescubierta || !payload?.cartaTapada) {
+          callback({
+            status: 'error',
+            message: 'Tria de desempat invàlida.',
+          });
+          return;
+        }
         room.actor.send({
           type: 'ELEGIR_CARTA_DESEMPATE',
           jugadorId: playerId,
-          cartaDescubierta: action.payload,
+          cartaDescubierta: payload.cartaDescubierta,
+          cartaTapada: payload.cartaTapada,
         });
       } else {
         room.actor.send({
