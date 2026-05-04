@@ -1,9 +1,11 @@
 import { getAllowedActions } from '@valencia-truc/shared-game-engine';
 import type { Server } from 'socket.io';
-import type {
-  ClientToServerEvents,
-  ServerToClientEvents,
-  TrucAction,
+import {
+  MAX_ACTIVE_ROOMS,
+  type Card,
+  type ClientToServerEvents,
+  type ServerToClientEvents,
+  type TrucAction,
 } from '@valencia-truc/shared-interfaces';
 import {
   actionToEvent,
@@ -25,6 +27,14 @@ export function registerSocketHandlers(
     socket.on(
       'room:create',
       ({ name, bots = 0, playerId, playerName }, callback) => {
+        if (roomManager.rooms.size >= MAX_ACTIVE_ROOMS) {
+          callback({
+            status: 'error',
+            message: `Límite de salas activas alcanzado (${MAX_ACTIVE_ROOMS}).`,
+          });
+          return;
+        }
+
         const roomName = name?.trim() || `Sala ${roomManager.rooms.size + 1}`;
         const botCount = Math.max(0, Math.min(3, bots));
         const displayName = normalizePlayerName(playerName, 'Jugador 1');
@@ -64,6 +74,7 @@ export function registerSocketHandlers(
       }
 
       room.playerNames[playerId] = displayName;
+      roomManager.touchActivity(uid);
 
       socket.data.playerId = playerId;
       socket.data.roomUid = uid;
@@ -104,10 +115,21 @@ export function registerSocketHandlers(
           jugadores: [...room.playerIds, ...room.botIds],
         });
       } else if (eventType === 'ELEGIR_CARTA_DESEMPATE') {
+        const payload = action.payload as
+          | { cartaDescubierta?: Card; cartaTapada?: Card }
+          | undefined;
+        if (!payload?.cartaDescubierta || !payload?.cartaTapada) {
+          callback({
+            status: 'error',
+            message: 'Tria de desempat invàlida.',
+          });
+          return;
+        }
         room.actor.send({
           type: 'ELEGIR_CARTA_DESEMPATE',
           jugadorId: playerId,
-          cartaDescubierta: action.payload,
+          cartaDescubierta: payload.cartaDescubierta,
+          cartaTapada: payload.cartaTapada,
         });
       } else {
         room.actor.send({
@@ -122,6 +144,7 @@ export function registerSocketHandlers(
         roomManager.broadcastRoomsList();
       }
 
+      roomManager.touchActivity(room.uid);
       callback({ status: 'ok' });
     });
 
