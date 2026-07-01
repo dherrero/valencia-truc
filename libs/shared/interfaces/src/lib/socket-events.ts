@@ -55,6 +55,9 @@ export interface PlayerSeat {
   cardCount: number;
   isPartner: boolean; // true = teammate, false = rival
   position: 'top' | 'right' | 'left';
+  // During the desempate (carta tapada) this player has already chosen their
+  // two cards. They are set aside face-down, not lost.
+  desempateSubmitted?: boolean;
 }
 
 export interface GameStateUpdate {

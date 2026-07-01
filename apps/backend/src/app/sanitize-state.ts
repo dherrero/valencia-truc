@@ -39,6 +39,8 @@ export function sanitizeGameState(
   const myIndex = allPlayerIds.indexOf(playerId);
   const myTeam = myIndex % 2 === 0 ? 'equipo1' : 'equipo2';
 
+  const inDesempate = snapshot ? isDesempateActive(snapshot as never) : false;
+
   const positions: Array<'right' | 'top' | 'left'> = ['right', 'top', 'left'];
   const otherPlayers: PlayerSeat[] = [];
 
@@ -61,6 +63,8 @@ export function sanitizeGameState(
       cardCount,
       isPartner,
       position,
+      desempateSubmitted:
+        inDesempate && !!context.cartasDesempate?.[otherId],
     });
   }
 
@@ -77,7 +81,6 @@ export function sanitizeGameState(
     },
   );
 
-  const inDesempate = snapshot ? isDesempateActive(snapshot as never) : false;
   const desempateSubmittedCount = Object.keys(
     context.cartasDesempate ?? {},
   ).length;

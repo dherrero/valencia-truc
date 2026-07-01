@@ -149,7 +149,7 @@ describe('trucMachine', () => {
     );
   });
 
-  it('pasa a la segunda baza si la primera empata', () => {
+  it('entra en el desempate (carta tapada) si la primera baza empata y no permite cantar apuestas', () => {
     jest.useFakeTimers();
 
     const actor = createActor(trucMachine);
@@ -209,10 +209,12 @@ describe('trucMachine', () => {
     const snapshot = actor.getSnapshot();
     const accionesP1 = getAllowedActions(snapshot, 'p1');
 
-    expect(snapshot.matches({ ronda: 'mano_2' })).toBe(true);
-    expect(accionesP1).toContain(TrucAction.JUGAR_CARTA);
-    expect(accionesP1).not.toContain(
-      'ELEGIR_CARTA_DESEMPATE' as unknown as TrucAction,
-    );
+    // Con la primera baza empatada se abre el desempate de carta tapada.
+    expect(snapshot.matches({ ronda: 'mano_desempate' })).toBe(true);
+    expect(accionesP1).toContain(TrucAction.ELEGIR_CARTA_DESEMPATE);
+    // Durante el desempate no se puede jugar carta normal ni cantar apuestas.
+    expect(accionesP1).not.toContain(TrucAction.JUGAR_CARTA);
+    expect(accionesP1).not.toContain(TrucAction.TRUC);
+    expect(accionesP1).not.toContain(TrucAction.ENVIDO);
   });
 });

@@ -404,14 +404,16 @@ export function getAllowedActions(
     allowedActions.push(TrucAction.ELEGIR_CARTA_DESEMPATE);
   }
 
-  if (
-    !snapshot.matches({ ronda: 'mano_desempate' }) &&
-    context.turnoActual === jugadorId
-  ) {
+  // Mientras se resuelve el desempate (carta tapada) no se puede jugar ni cantar
+  // apuestas: sólo elegir las 2 cartas de desempate.
+  const inDesempate = isDesempateActive(snapshot);
+
+  if (!inDesempate && context.turnoActual === jugadorId) {
     allowedActions.push(TrucAction.JUGAR_CARTA);
   }
 
   if (
+    !inDesempate &&
     snapshot.matches({ envido: 'disponible' }) &&
     context.manoActual === 1 &&
     context.estadoApuestaTruc === 'ninguno'
@@ -419,11 +421,12 @@ export function getAllowedActions(
     allowedActions.push(TrucAction.ENVIDO);
   }
 
-  if (snapshot.matches({ truc: 'truc_disponible' })) {
+  if (!inDesempate && snapshot.matches({ truc: 'truc_disponible' })) {
     allowedActions.push(TrucAction.TRUC);
   }
 
   if (
+    !inDesempate &&
     snapshot.matches({ truc: 'retruc_disponible' }) &&
     playerCanRespondToTeamBet(context, jugadorId, context.equipoApostadorTruc)
   ) {
@@ -431,6 +434,7 @@ export function getAllowedActions(
   }
 
   if (
+    !inDesempate &&
     snapshot.matches({ truc: 'vale_quatre_disponible' }) &&
     playerCanRespondToTeamBet(context, jugadorId, context.equipoApostadorTruc)
   ) {
@@ -438,6 +442,7 @@ export function getAllowedActions(
   }
 
   if (
+    !inDesempate &&
     snapshot.matches({ truc: 'juego_fuera_disponible' }) &&
     playerCanRespondToTeamBet(context, jugadorId, context.equipoApostadorTruc)
   ) {

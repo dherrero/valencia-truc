@@ -19,7 +19,11 @@ export const BoardOpponentSeat: React.FC<BoardOpponentSeatProps> = ({
 }) => {
   const { t } = useI18n();
   const name = seat.displayName || '…';
-  const backs = Array.from({ length: seat.cardCount });
+  // During the desempate a player who has already chosen keeps their two cards
+  // set aside face-down (they are not lost), so show two backs instead of "—".
+  const backs = Array.from({
+    length: seat.desempateSubmitted ? 2 : seat.cardCount,
+  });
 
   // On mobile push card stack toward the screen edge
   const cardShift =
@@ -44,6 +48,11 @@ export const BoardOpponentSeat: React.FC<BoardOpponentSeatProps> = ({
         <div
           className={`relative flex flex-col items-center p-2 rounded-xl ring-1 ring-emerald-500/30 ${isTurn ? 'ring-2 ring-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.6)]' : ''} ${cardShift}`}
         >
+          {seat.desempateSubmitted && (
+            <span className="absolute -top-2 -right-2 z-10 bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow">
+              ✓ {t('board.desempateChosen')}
+            </span>
+          )}
           <div className="flex flex-col items-center -space-y-4">
             <AnimatePresence>
               {backs.length > 0 ? (
