@@ -21,7 +21,12 @@ export const BoardSeat: React.FC<BoardSeatProps> = ({
   const textColor = seat.isPartner ? 'text-blue-300' : 'text-red-300';
   const name = seat.displayName || '…';
 
-  const backs = Array.from({ length: seat.cardCount });
+  // During the desempate a player who has already chosen keeps their two cards
+  // set aside face-down (they are not lost), so show two backs instead of the
+  // "no cards" placeholder.
+  const backs = Array.from({
+    length: seat.desempateSubmitted ? 2 : seat.cardCount,
+  });
 
   return (
     <div className="flex flex-col items-center gap-1">
@@ -42,6 +47,11 @@ export const BoardSeat: React.FC<BoardSeatProps> = ({
             </span>
           )}
         </AnimatePresence>
+        {seat.desempateSubmitted && (
+          <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow">
+            ✓ {t('board.desempateChosen')}
+          </span>
+        )}
       </div>
       {isMano && (
         <div

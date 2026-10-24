@@ -32,6 +32,7 @@ function buildStateUpdate(
     allPlayerIds,
     room.playerNames,
     phase,
+    snapshot,
   );
 }
 
